@@ -2,7 +2,7 @@
   "name": "KBTTC Undian & Draw Sheet",
   "short_name": "KBTTC Undian",
   "description": "Sistem undian kumpulan & carta draw sheet kejohanan pingpong beregu KBTTC",
-  "start_url": "./Undian.html",
+  "start_url": "./undi.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
