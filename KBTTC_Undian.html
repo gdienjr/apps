@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Kejohanan Pingpong Beregu (Live Draw & Bracket)</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest-undian.json">
+    <meta name="theme-color" content="#1769e0">
+    <link rel="icon" href="icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="KBTTC Undian">
+    <style>
+:root{
+  --bg:#eef3f8;
+  --card:#ffffff;
+  --ink:#172033;
+  --muted:#6b778c;
+  --primary:#1769e0;
+  --primary2:#0d47a1;
+  --success:#0b9f6e;
+  --gold:#f59e0b;
+  --border:#dfe6ef;
+  --shadow:0 14px 40px rgba(25,45,75,.10);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Inter,"Segoe UI",Tahoma,Arial,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 15% 0%,rgba(23,105,224,.12),transparent 28%),
+    radial-gradient(circle at 90% 10%,rgba(11,159,110,.10),transparent 25%),
+    var(--bg);
+  padding:28px 16px 50px;
+}
+.container{
+  width:min(980px,100%);
+  margin:0 auto;
+  background:var(--card);
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:24px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.container:before{
+  content:"";
+  display:block;
+  height:6px;
+  background:linear-gradient(90deg,var(--primary),#22a06b,#f5b63b);
+}
+.container{padding:0 28px 30px}
+h2{
+  margin:0;
+  padding-top:28px;
+  color:var(--ink);
+  text-align:center;
+  font-size:clamp(23px,4vw,32px);
+  letter-spacing:-.5px;
+}
+.subtitle{
+  text-align:center;
+  color:var(--muted);
+  font-size:14px;
+  margin:8px auto 28px;
+  max-width:700px;
+}
+.stage{
+  margin:0 0 18px;
+  padding:22px;
+  border:1px solid var(--border);
+  border-radius:18px;
+  background:linear-gradient(180deg,#fff,#f9fbfd);
+  box-shadow:0 5px 18px rgba(28,49,80,.05);
+}
+.stage:last-child{margin-bottom:0}
+.stage h3{
+  margin:0 0 7px;
+  color:var(--ink);
+  font-size:18px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.stage h3:after{
+  content:"";
+  height:3px;
+  width:34px;
+  border-radius:10px;
+  background:var(--primary);
+  margin-left:2px;
+}
+.stage p{
+  color:var(--muted);
+  line-height:1.55;
+  margin:0 0 14px;
+}
+textarea{
+  width:100%;
+  min-height:150px;
+  resize:vertical;
+  padding:14px 15px;
+  border:1px solid #cfd8e5;
+  border-radius:13px;
+  box-sizing:border-box;
+  font:14px/1.5 inherit;
+  color:var(--ink);
+  background:#fbfcfe;
+  outline:none;
+  transition:.2s;
+}
+textarea:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 4px rgba(23,105,224,.10);
+  background:#fff;
+}
+button{
+  appearance:none;
+  width:100%;
+  border:0;
+  border-radius:12px;
+  padding:13px 18px;
+  margin-top:11px;
+  font:700 15px inherit;
+  color:#fff;
+  background:linear-gradient(135deg,var(--primary),#3488f2);
+  cursor:pointer;
+  box-shadow:0 7px 16px rgba(23,105,224,.20);
+  transition:transform .15s,box-shadow .15s,filter .15s;
+}
+button:hover{transform:translateY(-1px);filter:brightness(1.03);box-shadow:0 10px 20px rgba(23,105,224,.24)}
+button:active{transform:translateY(0)}
+button:disabled{background:#aab4c2;box-shadow:none;cursor:not-allowed;transform:none}
+button.btn-save{
+  background:linear-gradient(135deg,var(--success),#19b77f);
+  box-shadow:0 7px 16px rgba(11,159,110,.18);
+}
+button.btn-save:hover{box-shadow:0 10px 20px rgba(11,159,110,.22)}
+.saved-msg{
+  color:var(--success);
+  font-size:13px;
+  font-weight:700;
+  margin-top:8px;
+  text-align:right;
+  display:block;
+}
+.result-box{
+  margin-top:15px;
+  padding:16px;
+  background:#fff;
+  border:1px solid #dfe8f1;
+  border-left:4px solid var(--success);
+  border-radius:12px;
+  box-shadow:0 5px 15px rgba(30,50,80,.06);
+  line-height:1.55;
+}
+.group-container{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  margin-top:12px;
+}
+.group-card{
+  min-width:0;
+  background:#fff;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:0 3px 10px rgba(30,50,80,.04);
+}
+.group-card b{color:var(--primary2)}
+ul{padding-left:21px;margin:7px 0}
+li{margin-bottom:6px;font-size:14px}
+.spinning-text{
+  font-weight:700;
+  color:#b76a00;
+  text-align:center;
+  padding:12px;
+  font-size:15px;
+  animation:blink 1s infinite;
+}
+.bracket-box{
+  margin-top:14px;
+  background:linear-gradient(135deg,#0d1830,#1b2f52);
+  padding:22px 20px;
+  border-radius:16px;
+  color:#f5f8ff;
+  overflow-x:auto;
+  border:1px solid rgba(255,255,255,.08);
+}
+.bracket-box .bracket-heading{
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.04em;
+  color:#bcd0f5;
+  text-transform:uppercase;
+  text-align:center;
+  margin-bottom:18px;
+}
+.bracket-stage{margin-bottom:6px}
+.bracket-stage-label{
+  font-size:11px;
+  font-weight:800;
+  color:#8fa9d6;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  text-align:center;
+  margin-bottom:10px;
+}
+.bracket-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+.bracket-grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.bracket-grid.cols-1{grid-template-columns:1fr;max-width:320px;margin:0 auto}
+.bracket-card{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+  padding:10px 11px;
+  font-size:12px;
+  line-height:1.5;
+  backdrop-filter:blur(2px);
+  transition:transform .15s,background .15s;
+}
+.bracket-card:hover{background:rgba(255,255,255,.10);transform:translateY(-2px)}
+.bracket-seed{
+  display:flex;
+  justify-content:space-between;
+  gap:6px;
+  color:#dbe6ff;
+}
+.bracket-vs{
+  text-align:center;
+  font-size:10px;
+  color:#7d93bd;
+  margin:4px 0;
+  letter-spacing:.03em;
+}
+.bracket-champ-row{
+  display:flex;
+  justify-content:space-between;
+  gap:6px;
+  color:#ffd98a;
+  font-weight:800;
+}
+.bracket-winner-tag{
+  margin-top:7px;
+  text-align:center;
+  font-size:11px;
+  font-weight:800;
+  color:#7be8b9;
+  background:rgba(11,159,110,.14);
+  border:1px solid rgba(11,159,110,.35);
+  border-radius:8px;
+  padding:4px 6px;
+}
+.bracket-card.final-card{
+  max-width:320px;
+  margin:0 auto;
+  border-color:rgba(245,182,59,.4);
+  background:linear-gradient(135deg,rgba(245,182,59,.14),rgba(255,255,255,.05));
+}
+.bracket-card.final-card .bracket-winner-tag{
+  color:#ffe4a3;
+  background:rgba(245,182,59,.16);
+  border-color:rgba(245,182,59,.4);
+  font-size:13px;
+}
+.bracket-connector{
+  text-align:center;
+  color:#5f77a3;
+  font-size:16px;
+  margin:8px 0 14px;
+  letter-spacing:.2em;
+}
+@keyframes blink{0%{opacity:.45}50%{opacity:1}100%{opacity:.45}}
+@media(max-width:650px){
+  body{padding:12px 8px 30px}
+  .container{padding:0 14px 20px;border-radius:18px}
+  h2{font-size:22px;padding-top:22px}
+  .subtitle{font-size:12px;margin-bottom:20px}
+  .stage{padding:16px;border-radius:14px}
+  .stage h3{font-size:16px}
+  .group-container{grid-template-columns:1fr}
+  button{font-size:14px}
+  .bracket-box{padding:16px 12px}
+  .bracket-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bracket-grid.cols-2{grid-template-columns:1fr}
+}
+
+/* ===== EFFECT BUTANG KBTTC ===== */
+button{
+  position:relative;
+  overflow:hidden;
+  isolation:isolate;
+  transform:translateY(0) scale(1);
+  transition:
+    transform .12s ease,
+    box-shadow .18s ease,
+    filter .18s ease,
+    background .18s ease;
+}
+
+/* Kilauan bergerak ketika hover */
+button::before{
+  content:"";
+  position:absolute;
+  top:0;
+  left:-110%;
+  width:55%;
+  height:100%;
+  background:linear-gradient(
+    100deg,
+    transparent,
+    rgba(255,255,255,.34),
+    transparent
+  );
+  transform:skewX(-20deg);
+  transition:left .55s ease;
+  z-index:-1;
+}
+button:hover::before{left:140%}
+
+/* Tekan button */
+button:active{
+  transform:translateY(2px) scale(.975);
+  box-shadow:0 2px 6px rgba(20,40,70,.18)!important;
+  filter:brightness(.96);
+}
+
+/* Effect fokus selepas keyboard */
+button:focus-visible{
+  outline:none;
+  box-shadow:
+    0 0 0 4px rgba(23,105,224,.18),
+    0 8px 18px rgba(23,105,224,.20);
+}
+
+/* Animasi "diproses" */
+button.btn-clicked{
+  animation:buttonPulse .42s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes buttonPulse{
+  0%{transform:scale(1)}
+  30%{transform:scale(.955)}
+  60%{transform:scale(1.03)}
+  100%{transform:scale(1)}
+}
+
+/* Ripple */
+button .ripple{
+  position:absolute;
+  border-radius:50%;
+  transform:scale(0);
+  background:rgba(255,255,255,.55);
+  pointer-events:none;
+  animation:rippleEffect .65s ease-out;
+  z-index:2;
+}
+@keyframes rippleEffect{
+  to{
+    transform:scale(4.5);
+    opacity:0;
+  }
+}
+
+/* Glow lembut sekeliling button sebaik ditekan */
+button.btn-clicked::after{
+  content:"";
+  position:absolute;
+  inset:-3px;
+  border-radius:inherit;
+  box-shadow:0 0 0 0 rgba(23,105,224,.45);
+  animation:btnGlow .55s ease-out;
+  pointer-events:none;
+  z-index:-2;
+}
+button.btn-save.btn-clicked::after{box-shadow:0 0 0 0 rgba(11,159,110,.45)}
+@keyframes btnGlow{
+  0%{box-shadow:0 0 0 0 rgba(23,105,224,.45)}
+  100%{box-shadow:0 0 18px 6px rgba(23,105,224,0)}
+}
+
+/* State "sedang diproses" pada button itu sendiri */
+button.is-loading{
+  color:transparent!important;
+  pointer-events:none;
+}
+button.is-loading::before{display:none}
+.btn-spinner{
+  position:absolute;
+  top:50%;left:50%;
+  width:20px;height:20px;
+  margin:-10px 0 0 -10px;
+  border:2.5px solid rgba(255,255,255,.45);
+  border-top-color:#fff;
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  z-index:3;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Fade-in + sedikit "pop" apabila hasil keluar */
+.result-box{
+  animation:none;
+}
+.result-box.show-in{
+  animation:resultIn .45s ease both;
+}
+@keyframes resultIn{
+  0%{opacity:0;transform:translateY(10px) scale(.985)}
+  100%{opacity:1;transform:translateY(0) scale(1)}
+}
+
+/* Highlight kilat sekali sahaja bila kad kumpulan muncul */
+.group-card,#resultJuara li,#resultP16 li{
+  animation:fadeUp .4s ease both;
+}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🏓 Sistem Kejohanan Pingpong Beregu</h2>
+    <div class="subtitle">Undian Rasmi & Paparan Carta Draw Sheet (Sifar Pertindihan Kumpulan)</div>
+
+    <!-- Prapendaftaran & Grouping -->
+    <div class="stage">
+        <h3>Langkah 1: Tetapan Nama Pair & Undian Kumpulan</h3>
+        <p>Masukkan senarai 20 nama pair beregu (satu nama setiap baris). Klik <b>Simpan Nama</b>:</p>
+        <textarea id="pairInput" placeholder="Contoh:&#10;Pair Ali/Abu&#10;Pair Muthu/Samy&#10;..."></textarea>
+        <button class="btn-save" onclick="simpanNama()">💾 Simpan Senarai Nama</button>
+        <span id="savedStatus" class="saved-msg"></span>
+        <button id="btnGroup" onclick="buatGrouping()">🎲 Undi Pecahan Kumpulan (A, B, C, D)</button>
+        <div id="resultGroup" class="result-box" style="display:none;"></div>
+    </div>
+
+    <!-- Peringkat 1: Undian Juara -->
+    <div class="stage">
+        <h3>Langkah 2: Undian Penempatan Juara Kumpulan</h3>
+        <p>Menempatkan Juara A, B, C, dan D ke slot Suku Akhir (Q1 hingga Q4).</p>
+        <button id="btnJuara" onclick="undiJuara()">🏆 Cabut Undian Juara Suku Akhir</button>
+        <div id="resultJuara" class="result-box" style="display:none;"></div>
+    </div>
+
+    <!-- Peringkat 2: Undian Pusingan 16 & Draw Sheet -->
+    <div class="stage">
+        <h3>Langkah 3: Undian Pusingan 16 & Penjanaan Carta (Draw Sheet)</h3>
+        <p>Memasangkan pair dengan tapisan ketat (elak jumpa kumpulan asal di Suku Akhir).</p>
+        <button id="btnP16" onclick="undiPusingan16()">⚡ Cabut Undian Pusingan 16 & Papar Carta</button>
+        <div id="resultP16" class="result-box" style="display:none;"></div>
+    </div>
+</div>
+
+
+<script>
+/* Visual button feedback - does not alter existing button actions */
+document.addEventListener("click", function(e){
+  const btn = e.target.closest("button");
+  if(!btn || btn.disabled) return;
+
+  // Pulse
+  btn.classList.remove("btn-clicked");
+  void btn.offsetWidth;
+  btn.classList.add("btn-clicked");
+
+  // Ripple at click position
+  const rect = btn.getBoundingClientRect();
+  const size = Math.max(rect.width, rect.height) * 0.55;
+  const ripple = document.createElement("span");
+  ripple.className = "ripple";
+  ripple.style.width = size + "px";
+  ripple.style.height = size + "px";
+  ripple.style.left = (e.clientX - rect.left - size/2) + "px";
+  ripple.style.top = (e.clientY - rect.top - size/2) + "px";
+  btn.appendChild(ripple);
+
+  ripple.addEventListener("animationend", () => ripple.remove());
+  setTimeout(() => ripple.remove(), 700);
+});
+</script>
+
+<script>
+    // Helper: tunjuk/sembunyi spinner dalam button semasa proses
+    function setBtnLoading(btn, loading){
+        if(loading){
+            btn.dataset.label = btn.dataset.label || btn.innerHTML;
+            btn.classList.add("is-loading");
+            btn.disabled = true;
+            const sp = document.createElement("span");
+            sp.className = "btn-spinner";
+            btn.appendChild(sp);
+        } else {
+            btn.classList.remove("is-loading");
+            btn.disabled = false;
+            const sp = btn.querySelector(".btn-spinner");
+            if(sp) sp.remove();
+            if(btn.dataset.label){
+                btn.innerHTML = btn.dataset.label;
+            }
+        }
+    }
+    function showResult(resBox){
+        resBox.style.display = "block";
+        resBox.classList.remove("show-in");
+        void resBox.offsetWidth;
+        resBox.classList.add("show-in");
+    }
+
+    let slotJuara = {};
+
+    window.onload = function() {
+        let savedData = localStorage.getItem("pingpong_pairs");
+        if (savedData) {
+            document.getElementById("pairInput").value = savedData;
+            document.getElementById("savedStatus").innerText = "✔ Nama telah dimuatkan dari simpanan terdahulu.";
+        }
+    };
+
+    function simpanNama() {
+        let inputVal = document.getElementById("pairInput").value;
+        localStorage.setItem("pingpong_pairs", inputVal);
+        document.getElementById("savedStatus").innerText = "✔ Berjaya Disimpan!";
+        setTimeout(() => {
+            document.getElementById("savedStatus").innerText = "✔ Nama tersimpan dalam peranti ini.";
+        }, 5000);
+    }
+
+    function buatGrouping() {
+        let inputVal = document.getElementById("pairInput").value.trim();
+        if(!inputVal) {
+            alert("Sila masukkan senarai pair terlebih dahulu!");
+            return;
+        }
+
+        let btn = document.getElementById("btnGroup");
+        let resBox = document.getElementById("resultGroup");
+        setBtnLoading(btn, true);
+        showResult(resBox);
+        resBox.innerHTML = "<div class='spinning-text'>🔄 Sedang mengocok nama-nama pair ke dalam kumpulan...</div>";
+
+        setTimeout(() => {
+            let pairs = inputVal.split("\n").map(p => p.trim()).filter(p => p.length > 0);
+            pairs.sort(() => Math.random() - 0.5);
+
+            let groups = { A: [], B: [], C: [], D: [] };
+            let groupKeys = ['A', 'B', 'C', 'D'];
+            
+            pairs.forEach((pair, index) => {
+                let gIndex = index % 4;
+                groups[groupKeys[gIndex]].push(pair);
+            });
+
+            let html = "<b>✨ Hasil Undian Kumpulan:</b><div class='group-container'>";
+            groupKeys.forEach(g => {
+                html += `<div class='group-card'><b>Kumpulan ${g}:</b><ul>`;
+                groups[g].forEach(p => html += `<li>${p}</li>`);
+                html += `</ul></div>`;
+            });
+            html += "</div>";
+
+            resBox.innerHTML = html;
+            showResult(resBox);
+            setBtnLoading(btn, false);
+        }, 5000);
+    }
+
+    function undiJuara() {
+        let btn = document.getElementById("btnJuara");
+        let resBox = document.getElementById("resultJuara");
+        setBtnLoading(btn, true);
+        showResult(resBox);
+        resBox.innerHTML = "<div class='spinning-text'>🏆 Sedang mengundi kedudukan Juara Kumpulan ke slot Suku Akhir...</div>";
+
+        setTimeout(() => {
+            let juaraList = ['A', 'B', 'C', 'D'];
+            juaraList.sort(() => Math.random() - 0.5);
+
+            slotJuara = {
+                Q1: juaraList[0],
+                Q2: juaraList[1],
+                Q3: juaraList[2],
+                Q4: juaraList[3]
+            };
+
+            let html = "<b>✨ Hasil Penempatan Suku Akhir:</b><ul>";
+            html += `<li>Slot Q1 menempatkan: <b>Juara Kumpulan ${slotJuara.Q1}</b></li>`;
+            html += `<li>Slot Q2 menempatkan: <b>Juara Kumpulan ${slotJuara.Q2}</b></li>`;
+            html += `<li>Slot Q3 menempatkan: <b>Juara Kumpulan ${slotJuara.Q3}</b></li>`;
+            html += `<li>Slot Q4 menempatkan: <b>Juara Kumpulan ${slotJuara.Q4}</b></li>`;
+            html += "</ul>";
+
+            resBox.innerHTML = html;
+            showResult(resBox);
+            setBtnLoading(btn, false);
+        }, 5000);
+    }
+
+    function undiPusingan16() {
+        if (Object.keys(slotJuara).length === 0) {
+            alert("Sila selesaikan Langkah 2 (Undian Juara Kumpulan) terlebih dahulu!");
+            return;
+        }
+
+        let btn = document.getElementById("btnP16");
+        let resBox = document.getElementById("resultP16");
+        setBtnLoading(btn, true);
+        showResult(resBox);
+        resBox.innerHTML = "<div class='spinning-text'>⚡ Menapis kombinasi selamat (elak jumpa kumpulan sendiri di Suku Akhir)...</div>";
+
+        setTimeout(() => {
+            let qSlots = [slotJuara.Q1, slotJuara.Q2, slotJuara.Q3, slotJuara.Q4];
+            
+            let permutations = [
+                ['B','C','D','A'], ['B','D','A','C'], ['B','A','D','C'],
+                ['C','D','A','B'], ['C','A','B','D'], ['C','D','B','A'],
+                ['D','A','B','C'], ['D','C','A','B'], ['D','A','C','B']
+            ];
+
+            let validPermutations = permutations.filter(rank2 => {
+                for(let i=0; i<4; i++) {
+                    if(rank2[i] === qSlots[i]) return false;
+                }
+                return true;
+            });
+
+            if(validPermutations.length === 0) {
+                validPermutations = [['B','C','D','A']];
+            }
+
+            let chosenRank2 = validPermutations[Math.floor(Math.random() * validPermutations.length)];
+            
+            // Tapisan ketat untuk rank3 supaya tiada yang sama dengan chosenRank2 atau qSlots
+            let rank3 = ['A', 'B', 'C', 'D'].sort(() => Math.random() - 0.5);
+            let isValidRank3 = false;
+            let maxLoop = 100;
+
+            while(!isValidRank3 && maxLoop > 0) {
+                maxLoop--;
+                rank3.sort(() => Math.random() - 0.5);
+                isValidRank3 = true;
+                for(let i=0; i<4; i++) {
+                    if(rank3[i] === chosenRank2[i] || rank3[i] === qSlots[i]) {
+                        isValidRank3 = false;
+                        break;
+                    }
+                }
+            }
+
+            // Paparan Senarai Perlawanan
+            let html = "<b>✨ Padanan Rasmi Pusingan 16 (Sifar Pertindihan Kumpulan di Suku Akhir):</b><ul>";
+            for(let i=0; i<4; i++) {
+                html += `<li>Perlawanan ${i + 1}: <b>Naib Juara ${chosenRank2[i]}</b> vs <b>Tempat Ke-3 ${rank3[i]}</b> &nbsp;&rightarrow;&nbsp; <i>Pemenang lawan Juara ${qSlots[i]} (Q${i + 1})</i></li>`;
+            }
+            html += "</ul>";
+
+            // Paparan Carta Draw Sheet Visual (bracket sebenar, bukan ASCII)
+            html += `<div class="bracket-box">
+                <div class="bracket-heading">📊 Carta Draw Sheet &mdash; Peringkat Kalah Mati</div>
+
+                <div class="bracket-stage">
+                    <div class="bracket-stage-label">Pusingan 16 ➜ Suku Akhir</div>
+                    <div class="bracket-grid">`;
+            for(let i=0; i<4; i++){
+                html += `
+                        <div class="bracket-card">
+                            <div class="bracket-seed"><span>2${chosenRank2[i]}</span><span>lwn</span><span>3${rank3[i]}</span></div>
+                            <div class="bracket-vs">▾ pemenang lawan ▾</div>
+                            <div class="bracket-seed"><span>🏆 Juara ${qSlots[i]}</span></div>
+                            <div class="bracket-winner-tag">➜ Q${i+1}</div>
+                        </div>`;
+            }
+            html += `
+                    </div>
+                </div>
+
+                <div class="bracket-connector">▾ ▾ ▾ ▾</div>
+
+                <div class="bracket-stage">
+                    <div class="bracket-stage-label">Separuh Akhir</div>
+                    <div class="bracket-grid cols-2">
+                        <div class="bracket-card">
+                            <div class="bracket-seed"><span>Pemenang Q1</span><span>lwn</span><span>Pemenang Q2</span></div>
+                            <div class="bracket-winner-tag">➜ Separuh Akhir 1</div>
+                        </div>
+                        <div class="bracket-card">
+                            <div class="bracket-seed"><span>Pemenang Q3</span><span>lwn</span><span>Pemenang Q4</span></div>
+                            <div class="bracket-winner-tag">➜ Separuh Akhir 2</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bracket-connector">▾</div>
+
+                <div class="bracket-stage">
+                    <div class="bracket-stage-label">🏆 Akhir</div>
+                    <div class="bracket-grid cols-1">
+                        <div class="bracket-card final-card">
+                            <div class="bracket-champ-row"><span>Pemenang SF1</span><span>lwn</span><span>Pemenang SF2</span></div>
+                            <div class="bracket-winner-tag">🏆 JUARA AKHIR KEJOHANAN</div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+
+            resBox.innerHTML = html;
+            showResult(resBox);
+            setBtnLoading(btn, false);
+        }, 5000);
+    }
+</script>
+
+<script>
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+            navigator.serviceWorker.register("sw-undian.js").catch(console.error);
+        });
+    }
+</script>
+
+</body>
+</html>
