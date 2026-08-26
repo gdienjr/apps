@@ -1,6 +1,6 @@
 const CACHE_NAME = "kbttc-undian-v1";
 const FILES_TO_CACHE = [
-  "./KBTTC_Undian1.html",
+  "./Undi.html",
   "./manifest-undian.json",
   "./icon-192.png",
   "./icon-512.png"
