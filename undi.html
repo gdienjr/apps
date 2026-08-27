@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Kejohanan Pingpong Beregu (Live Draw & Bracket)</title>
+    <title>Sistem Undian Game Double (Live Draw & Bracket)</title>
 
     <!-- PWA -->
     <link rel="manifest" href="manifest-undian.json">
@@ -517,16 +517,16 @@ button.is-loading::before{display:none}
 
 <div class="container">
     <h2>🏓 Sistem Kejohanan Pingpong Beregu</h2>
-    <div class="subtitle">Undian Rasmi & Paparan Carta Draw Sheet (Sifar Pertindihan Kumpulan)</div>
+    <div class="subtitle">Undian Rasmi & Paparan Carta Draw Sheet </div>
 
     <!-- Prapendaftaran & Grouping -->
     <div class="stage">
-        <h3>Langkah 1: Tetapan Nama Pair & Undian Kumpulan</h3>
-        <p>Masukkan senarai 20 nama pair beregu (satu nama setiap baris). Klik <b>Simpan Nama</b>:</p>
+        <h3>Step 1: Tetapan Nama Pair & Undian Kumpulan</h3>
+        <p>Masukkan senarai nama pair(satu nama setiap baris). Klik <b>Simpan Nama</b>:</p>
         <textarea id="pairInput" placeholder="Contoh:&#10;Pair Ali/Abu&#10;Pair Muthu/Samy&#10;..."></textarea>
         <button class="btn-save" onclick="simpanNama()">💾 Simpan Senarai Nama</button>
         <span id="savedStatus" class="saved-msg"></span>
-        <button id="btnGroup" onclick="buatGrouping()">🎲 Undi Pecahan Kumpulan (A, B, C, D)</button>
+        <button id="btnGroup" onclick="buatGrouping()">🎲 Undi Group (A, B, C, D)</button>
         <div id="resultGroup" class="result-box" style="display:none;"></div>
 
         <div id="scoreBtnWrap" class="score-btn-row no-print" style="display:none;">
@@ -539,7 +539,7 @@ button.is-loading::before{display:none}
     <div class="stage">
         <h3>Langkah 2: Undian Penempatan Juara Kumpulan</h3>
         <p>Menempatkan Juara A, B, C, dan D ke slot Suku Akhir (Q1 hingga Q4).</p>
-        <button id="btnJuara" onclick="undiJuara()">🏆 Cabut Undian Juara Suku Akhir</button>
+        <button id="btnJuara" onclick="undiJuara()">🏆 Undi Juara Group ke Suku Akhir</button>
         <div id="resultJuara" class="result-box" style="display:none;"></div>
     </div>
 
@@ -547,7 +547,7 @@ button.is-loading::before{display:none}
     <div class="stage">
         <h3>Langkah 3: Undian Pusingan 16 & Penjanaan Carta (Draw Sheet)</h3>
         <p>Memasangkan pair dengan tapisan ketat (elak jumpa kumpulan asal di Suku Akhir).</p>
-        <button id="btnP16" onclick="undiPusingan16()">⚡ Cabut Undian Pusingan 16 & Papar Carta</button>
+        <button id="btnP16" onclick="undiPusingan16()">⚡ Undian Pusingan 16</button>
         <div id="resultP16" class="result-box" style="display:none;"></div>
     </div>
 </div>
@@ -638,7 +638,7 @@ document.addEventListener("click", function(e){
         let resBox = document.getElementById("resultGroup");
         setBtnLoading(btn, true);
         showResult(resBox);
-        resBox.innerHTML = "<div class='spinning-text'>🔄 Sedang mengocok nama-nama pair ke dalam kumpulan...</div>";
+        resBox.innerHTML = "<div class='spinning-text'>🔄 Undian Sedang Berjalan...</div>";
 
         setTimeout(() => {
             let pairs = inputVal.split("\n").map(p => p.trim()).filter(p => p.length > 0);
@@ -708,7 +708,7 @@ document.addEventListener("click", function(e){
         let resBox = document.getElementById("resultJuara");
         setBtnLoading(btn, true);
         showResult(resBox);
-        resBox.innerHTML = "<div class='spinning-text'>🏆 Sedang mengundi kedudukan Juara Kumpulan ke slot Suku Akhir...</div>";
+        resBox.innerHTML = "<div class='spinning-text'>🏆 Undian Sedang Berjalan...</div>";
 
         setTimeout(() => {
             let juaraList = ['A', 'B', 'C', 'D'];
@@ -744,7 +744,7 @@ document.addEventListener("click", function(e){
         let resBox = document.getElementById("resultP16");
         setBtnLoading(btn, true);
         showResult(resBox);
-        resBox.innerHTML = "<div class='spinning-text'>⚡ Menapis kombinasi selamat (elak jumpa kumpulan sendiri di Suku Akhir)...</div>";
+        resBox.innerHTML = "<div class='spinning-text'>⚡ Jangan Bimbang,takkan Jumpa kumpulan sendiri di Suku Akhir)...</div>";
 
         setTimeout(() => {
             let qSlots = [slotJuara.Q1, slotJuara.Q2, slotJuara.Q3, slotJuara.Q4];
