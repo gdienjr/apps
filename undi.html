@@ -175,6 +175,61 @@ button.btn-save:hover{box-shadow:0 10px 20px rgba(11,159,110,.22)}
 .group-card b{color:var(--primary2)}
 ul{padding-left:21px;margin:7px 0}
 li{margin-bottom:6px;font-size:14px}
+
+/* Jadual Markah (round-robin) */
+.score-btn-row{margin-top:16px}
+.score-sheet-page{
+  background:#fff;
+  border:2px solid #222;
+  border-radius:6px;
+  padding:16px;
+  margin-bottom:22px;
+}
+.score-sheet-page h4{
+  margin:0 0 12px;
+  font-size:17px;
+  color:var(--primary2);
+}
+table.score-table{
+  width:100%;
+  border-collapse:collapse;
+  table-layout:fixed;
+}
+table.score-table th,table.score-table td{
+  border:2px solid #222;
+  padding:9px 6px;
+  text-align:center;
+  font-size:14px;
+}
+table.score-table th{
+  background:#eef1e9;
+  font-weight:700;
+}
+table.score-table td.nama-col{
+  text-align:left;
+  padding-left:10px;
+  font-weight:600;
+}
+table.score-table td.blocked{
+  background:#7c8172;
+}
+table.score-table td.jumlah-col{
+  background:#fbfbf6;
+}
+.no-print{}
+
+@media print{
+  body *{visibility:hidden}
+  #printArea, #printArea *{visibility:visible}
+  #printArea{position:absolute;top:0;left:0;width:100%}
+  .score-sheet-page{
+    border:2px solid #000;
+    box-shadow:none;
+    page-break-after:always;
+  }
+  .score-sheet-page:last-child{page-break-after:auto}
+}
+
 .spinning-text{
   font-weight:700;
   color:#b76a00;
@@ -444,6 +499,11 @@ button.is-loading::before{display:none}
         <span id="savedStatus" class="saved-msg"></span>
         <button id="btnGroup" onclick="buatGrouping()">🎲 Undi Pecahan Kumpulan (A, B, C, D)</button>
         <div id="resultGroup" class="result-box" style="display:none;"></div>
+
+        <div id="scoreBtnWrap" class="score-btn-row no-print" style="display:none;">
+            <button id="btnCetak" onclick="cetakJadualMarkah()">🖨️ Papar & Cetak Jadual Markah Kumpulan</button>
+        </div>
+        <div id="printArea"></div>
     </div>
 
     <!-- Peringkat 1: Undian Juara -->
@@ -519,6 +579,7 @@ document.addEventListener("click", function(e){
     }
 
     let slotJuara = {};
+    let currentGroups = {};
 
     window.onload = function() {
         let savedData = localStorage.getItem("pingpong_pairs");
@@ -573,7 +634,44 @@ document.addEventListener("click", function(e){
             resBox.innerHTML = html;
             showResult(resBox);
             setBtnLoading(btn, false);
+
+            currentGroups = groups;
+            document.getElementById("scoreBtnWrap").style.display = "block";
         }, 5000);
+    }
+
+    function cetakJadualMarkah() {
+        let groupKeys = Object.keys(currentGroups);
+        if (groupKeys.length === 0) {
+            alert("Sila buat Undian Pecahan Kumpulan dahulu!");
+            return;
+        }
+
+        let printArea = document.getElementById("printArea");
+        let html = "";
+
+        groupKeys.forEach(g => {
+            let pairs = currentGroups[g];
+            let n = pairs.length;
+
+            html += `<div class="score-sheet-page"><h4>Jadual Markah — Kumpulan ${g}</h4>`;
+            html += `<table class="score-table"><thead><tr><th></th><th>KUMPULAN</th>`;
+            for (let c = 1; c <= n; c++) html += `<th>${c}</th>`;
+            html += `<th>JUMLAH</th></tr></thead><tbody>`;
+
+            for (let r = 1; r <= n; r++) {
+                html += `<tr><th>${r}</th><td class="nama-col">${pairs[r - 1]}</td>`;
+                for (let c = 1; c <= n; c++) {
+                    html += (c === r) ? `<td class="blocked"></td>` : `<td></td>`;
+                }
+                html += `<td class="jumlah-col"></td></tr>`;
+            }
+
+            html += `</tbody></table></div>`;
+        });
+
+        printArea.innerHTML = html;
+        setTimeout(() => window.print(), 200);
     }
 
     function undiJuara() {
