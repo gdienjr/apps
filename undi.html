@@ -530,8 +530,8 @@ button.is-loading::before{display:none}
 
     <!-- Prapendaftaran & Grouping -->
     <div class="stage">
-        <h3>Langkah 1: Tetapan Nama Pair & Undian Kumpulan</h3>
-        <p>Masukkan senarai 20 nama pair beregu (satu nama setiap baris). Klik <b>Simpan Nama</b>:</p>
+        <h3>Step 1: Tetapan Nama Pair & Undian Kumpulan</h3>
+        <p>Masukkan senarai nama (satu nama setiap baris). Klik <b>Simpan Nama</b>:</p>
         <textarea id="pairInput" placeholder="Contoh:&#10;Pair Ali/Abu&#10;Pair Muthu/Samy&#10;..."></textarea>
         <button class="btn-save" onclick="simpanNama()">💾 Simpan Senarai Nama</button>
         <span id="savedStatus" class="saved-msg"></span>
@@ -546,7 +546,7 @@ button.is-loading::before{display:none}
 
     <!-- Peringkat 1: Undian Juara -->
     <div class="stage">
-        <h3>Langkah 2: Undian Penempatan Juara Kumpulan</h3>
+        <h3>Step 2: Undian Penempatan Juara Kumpulan</h3>
         <p>Menempatkan Juara A, B, C, dan D ke slot Suku Akhir (Q1 hingga Q4).</p>
         <button id="btnJuara" onclick="undiJuara()">🏆 Undian Juara ke Suku Akhir</button>
         <div id="resultJuara" class="result-box" style="display:none;"></div>
@@ -731,10 +731,10 @@ document.addEventListener("click", function(e){
             };
 
             let html = "<b>✨ Hasil Penempatan Suku Akhir:</b><ul>";
-            html += `<li>Slot Q1 menempatkan: <b>Juara Kumpulan ${slotJuara.Q1}</b></li>`;
-            html += `<li>Slot Q2 menempatkan: <b>Juara Kumpulan ${slotJuara.Q2}</b></li>`;
-            html += `<li>Slot Q3 menempatkan: <b>Juara Kumpulan ${slotJuara.Q3}</b></li>`;
-            html += `<li>Slot Q4 menempatkan: <b>Juara Kumpulan ${slotJuara.Q4}</b></li>`;
+            html += `<li>Slot Q1 : <b>Juara Kumpulan ${slotJuara.Q1}</b></li>`;
+            html += `<li>Slot Q2 : <b>Juara Kumpulan ${slotJuara.Q2}</b></li>`;
+            html += `<li>Slot Q3 : <b>Juara Kumpulan ${slotJuara.Q3}</b></li>`;
+            html += `<li>Slot Q4 : <b>Juara Kumpulan ${slotJuara.Q4}</b></li>`;
             html += "</ul>";
 
             resBox.innerHTML = html;
