@@ -227,7 +227,15 @@ table.score-table th.no-col{
 .no-print{}
 
 @media print{
-  @page{ size: landscape; margin: 10mm; }
+  @page{ size: auto; margin: 10mm; }
+  html, body{
+    width:100vh;
+    height:100vw;
+  }
+  body{
+    transform: rotate(90deg) translateY(-100%);
+    transform-origin: top left;
+  }
   body *{visibility:hidden}
   #printArea, #printArea *{visibility:visible}
   #printArea{position:absolute;top:0;left:0;width:100%}
@@ -235,7 +243,7 @@ table.score-table th.no-col{
     border:2px solid #000;
     box-shadow:none;
     page-break-after:always;
-    height:100vh;
+    height:100%;
     box-sizing:border-box;
     display:flex;
     flex-direction:column;
