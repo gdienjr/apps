@@ -5,6 +5,7 @@
   "start_url": "./undi.html",
   "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#eef3f8",
   "theme_color": "#1769e0",
   "icons": [
