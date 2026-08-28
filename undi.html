@@ -276,6 +276,12 @@ ol.numbered-list li::before{
   float:right;
   margin-right:8px;
 }
+.sync-status{
+  clear:both;
+  font-size:12px;
+  color:var(--muted);
+  margin:2px 0 14px;
+}
 
 /* Jadual Markah (round-robin) */
 .score-btn-row{margin-top:16px}
@@ -667,6 +673,7 @@ button.is-loading::before{display:none}
 <div class="container">
     <h2>🏓 Sistem Kejohanan Pingpong Beregu</h2>
     <div class="subtitle">Undian Rasmi & Paparan Carta Draw Sheet (Sifar Pertindihan Kumpulan)</div>
+    <div id="syncStatus" class="sync-status no-print"></div>
     <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ Paparan Pemain (Live)</a>
     <button class="btn-reset no-print" onclick="resetSemua()">🗑️ Reset Semua Data</button>
 
@@ -767,6 +774,53 @@ document.addEventListener("click", function(e){
     let slotJuara = {};
     let currentGroups = {};
 
+    // ====== Sync ke Google Sheet (backend) ======
+    // Ganti URL bawah dengan "Web app URL" selepas deploy Google Apps Script.
+    const API_URL = "https://script.google.com/macros/s/AKfycbwk6IQCYNyNhfPIdMgsoFlUEYflFmXicq8zDPbJif5xkDXREoQZqgP2xMLliPy_82W27Q/exec";
+
+    function apiReady() {
+        return API_URL && API_URL.startsWith("http");
+    }
+
+    function pushToSheet(key, value) {
+        if (!apiReady()) return;
+        fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ key: key, value: value })
+        }).catch(err => console.warn("Gagal sync ke Google Sheet:", err));
+    }
+
+    function saveState(key, value) {
+        localStorage.setItem(key, JSON.stringify(value));
+        pushToSheet(key, value);
+    }
+
+    function clearState(key) {
+        localStorage.removeItem(key);
+        pushToSheet(key, null);
+    }
+
+    async function pullFromSheet() {
+        if (!apiReady()) return false;
+        try {
+            let res = await fetch(API_URL, { cache: "no-store" });
+            let data = await res.json();
+            let keys = ["kbttc_undian_groups", "kbttc_undian_ranks", "kbttc_undian_slotjuara", "kbttc_undian_p16", "kbttc_undian_matches"];
+            keys.forEach(k => {
+                if (data[k] !== undefined && data[k] !== null) {
+                    localStorage.setItem(k, JSON.stringify(data[k]));
+                } else {
+                    localStorage.removeItem(k);
+                }
+            });
+            return true;
+        } catch (err) {
+            console.warn("Gagal tarik data dari Google Sheet, guna simpanan tempatan:", err);
+            return false;
+        }
+    }
+
     function renderGroupResult(groups) {
         let html = "<b>✨ Hasil Undian Kumpulan:</b><div class='group-container'>";
         Object.keys(groups).forEach(g => {
@@ -797,7 +851,7 @@ document.addEventListener("click", function(e){
         wrap.innerHTML = html;
     }
 
-    function simpanKeputusan(g) {
+    function simpanKeputusan(g, skipPush) {
         let pairs = currentGroups[g];
         let n = pairs.length;
         let p1 = parseInt(document.getElementById(`rankIn-${g}-1`).value);
@@ -831,21 +885,35 @@ document.addEventListener("click", function(e){
 
         let allRanks = JSON.parse(localStorage.getItem("kbttc_undian_ranks") || "{}");
         allRanks[g] = { p1, p2, p3 };
-        localStorage.setItem("kbttc_undian_ranks", JSON.stringify(allRanks));
+        if (skipPush) {
+            localStorage.setItem("kbttc_undian_ranks", JSON.stringify(allRanks));
+        } else {
+            saveState("kbttc_undian_ranks", allRanks);
+        }
     }
 
     function resetSemua() {
         if (!confirm("Padam semua data (nama pair, grouping, keputusan, carta kalah mati)? Tindakan ini tidak boleh diundur.")) return;
         localStorage.removeItem("pingpong_pairs");
-        localStorage.removeItem("kbttc_undian_groups");
-        localStorage.removeItem("kbttc_undian_ranks");
-        localStorage.removeItem("kbttc_undian_slotjuara");
-        localStorage.removeItem("kbttc_undian_p16");
-        localStorage.removeItem("kbttc_undian_matches");
+        clearState("kbttc_undian_groups");
+        clearState("kbttc_undian_ranks");
+        clearState("kbttc_undian_slotjuara");
+        clearState("kbttc_undian_p16");
+        clearState("kbttc_undian_matches");
         location.reload();
     }
 
-    window.onload = function() {
+    window.onload = async function() {
+        if (apiReady()) {
+            document.getElementById("syncStatus").innerText = "🔄 Menyegerak data dari Google Sheet...";
+            let ok = await pullFromSheet();
+            document.getElementById("syncStatus").innerText = ok
+                ? "🌐 Data terkini dari Google Sheet."
+                : "📴 Gagal hubungi Google Sheet — guna simpanan tempatan.";
+        } else {
+            document.getElementById("syncStatus").innerText = "📴 Sync Google Sheet belum diaktifkan (guna simpanan tempatan sahaja).";
+        }
+
         let savedData = localStorage.getItem("pingpong_pairs");
         if (savedData) {
             document.getElementById("pairInput").value = savedData;
@@ -871,7 +939,7 @@ document.addEventListener("click", function(e){
                 document.getElementById(`rankIn-${g}-1`).value = r.p1;
                 document.getElementById(`rankIn-${g}-2`).value = r.p2;
                 document.getElementById(`rankIn-${g}-3`).value = r.p3;
-                simpanKeputusan(g);
+                simpanKeputusan(g, true);
             });
         }
 
@@ -927,11 +995,11 @@ document.addEventListener("click", function(e){
             setBtnLoading(btn, false);
 
             currentGroups = groups;
-            localStorage.setItem("kbttc_undian_groups", JSON.stringify(groups));
-            localStorage.removeItem("kbttc_undian_ranks");
-            localStorage.removeItem("kbttc_undian_slotjuara");
-            localStorage.removeItem("kbttc_undian_p16");
-            localStorage.removeItem("kbttc_undian_matches");
+            saveState("kbttc_undian_groups", groups);
+            clearState("kbttc_undian_ranks");
+            clearState("kbttc_undian_slotjuara");
+            clearState("kbttc_undian_p16");
+            clearState("kbttc_undian_matches");
             document.getElementById("scoreBtnWrap").style.display = "block";
             document.getElementById("resultJuara").style.display = "none";
             document.getElementById("resultJuara").innerHTML = "";
@@ -1005,9 +1073,9 @@ document.addEventListener("click", function(e){
                 Q3: juaraList[2],
                 Q4: juaraList[3]
             };
-            localStorage.setItem("kbttc_undian_slotjuara", JSON.stringify(slotJuara));
-            localStorage.removeItem("kbttc_undian_p16");
-            localStorage.removeItem("kbttc_undian_matches");
+            saveState("kbttc_undian_slotjuara", slotJuara);
+            clearState("kbttc_undian_p16");
+            clearState("kbttc_undian_matches");
 
             resBox.innerHTML = renderSlotJuaraResult(slotJuara);
             showResult(resBox);
@@ -1173,7 +1241,7 @@ document.addEventListener("click", function(e){
             (downstream[id] || []).forEach(nextId => queue.push(nextId));
         }
 
-        localStorage.setItem("kbttc_undian_matches", JSON.stringify(matches));
+        saveState("kbttc_undian_matches", matches);
         renderPusingan16UI();
     }
 
@@ -1228,8 +1296,8 @@ document.addEventListener("click", function(e){
             }
 
             let p16draw = { qSlots, chosenRank2, rank3 };
-            localStorage.setItem("kbttc_undian_p16", JSON.stringify(p16draw));
-            localStorage.removeItem("kbttc_undian_matches");
+            saveState("kbttc_undian_p16", p16draw);
+            clearState("kbttc_undian_matches");
 
             setBtnLoading(btn, false);
             renderPusingan16UI();

@@ -239,6 +239,7 @@ li.eliminated{opacity:.5;text-decoration:line-through}
         <h1>🏓 Keputusan & Carta Kejohanan</h1>
         <div>
             <span class="live-badge"><span class="live-dot"></span> LIVE</span>
+            <div class="updated-txt" id="sourceTxt"></div>
             <div class="updated-txt" id="updatedTxt"></div>
         </div>
     </div>
@@ -260,6 +261,40 @@ li.eliminated{opacity:.5;text-decoration:line-through}
 </div>
 
 <script>
+// Ganti URL bawah dengan "Web app URL" yang sama seperti dalam undi.html.
+const API_URL = "https://script.google.com/macros/s/AKfycbwk6IQCYNyNhfPIdMgsoFlUEYflFmXicq8zDPbJif5xkDXREoQZqgP2xMLliPy_82W27Q/exec";
+
+function apiReady() {
+    return API_URL && API_URL.startsWith("http");
+}
+
+async function fetchState() {
+    if (apiReady()) {
+        try {
+            let res = await fetch(API_URL, { cache: "no-store" });
+            let data = await res.json();
+            document.getElementById("sourceTxt").innerText = "🌐 Live dari Google Sheet";
+            return {
+                groups: data.kbttc_undian_groups || {},
+                ranks: data.kbttc_undian_ranks || {},
+                slotJuara: data.kbttc_undian_slotjuara || {},
+                p16draw: data.kbttc_undian_p16 || null,
+                matches: data.kbttc_undian_matches || {}
+            };
+        } catch (err) {
+            console.warn("Gagal hubungi Google Sheet, guna simpanan tempatan:", err);
+        }
+    }
+    document.getElementById("sourceTxt").innerText = "📴 Guna simpanan tempatan (peranti ini sahaja)";
+    return {
+        groups: JSON.parse(localStorage.getItem("kbttc_undian_groups") || "{}"),
+        ranks: JSON.parse(localStorage.getItem("kbttc_undian_ranks") || "{}"),
+        slotJuara: JSON.parse(localStorage.getItem("kbttc_undian_slotjuara") || "{}"),
+        p16draw: JSON.parse(localStorage.getItem("kbttc_undian_p16") || "null"),
+        matches: JSON.parse(localStorage.getItem("kbttc_undian_matches") || "{}")
+    };
+}
+
 function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -425,12 +460,8 @@ function renderBracket(state) {
     return html;
 }
 
-function renderAll() {
-    let groups = JSON.parse(localStorage.getItem("kbttc_undian_groups") || "{}");
-    let ranks = JSON.parse(localStorage.getItem("kbttc_undian_ranks") || "{}");
-    let slotJuara = JSON.parse(localStorage.getItem("kbttc_undian_slotjuara") || "{}");
-    let p16draw = JSON.parse(localStorage.getItem("kbttc_undian_p16") || "null");
-    let matches = JSON.parse(localStorage.getItem("kbttc_undian_matches") || "{}");
+async function renderAll() {
+    let { groups, ranks, slotJuara, p16draw, matches } = await fetchState();
 
     let groupHtml = renderGroups(groups, ranks);
     document.getElementById("groupArea").innerHTML = groupHtml || "<div class='empty-msg'>Belum ada undian kumpulan lagi.</div>";
@@ -449,7 +480,7 @@ function renderAll() {
 }
 
 renderAll();
-setInterval(renderAll, 4000);
+setInterval(renderAll, 6000);
 </script>
 
 </body>
