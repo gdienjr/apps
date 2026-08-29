@@ -795,13 +795,45 @@ document.addEventListener("click", function(e){
         return API_URL && API_URL.startsWith("http");
     }
 
+    // Baris gilir (queue) supaya setiap POST ke Google Sheet DIJAMIN
+    // dihantar & selesai secara bergiliran, satu lepas satu — bukan
+    // "tembak sekaligus" (fire-and-forget) seperti dulu.
+    //
+    // Sebelum ni, kalau admin klik pilih pemenang beberapa perlawanan
+    // secara pantas, beberapa request fetch() ditembak hampir serentak
+    // tanpa dijamin susunan sampai ke server. Kalau request yang bawa
+    // data LAMA sampai LEWAT (network delay), ia boleh overwrite data
+    // BARU yang sepatutnya sampai dulu — punca papar.html papar hasil
+    // separuh walaupun undi.html (localStorage) dah lengkap.
+    let syncQueue = Promise.resolve();
+    let pendingSyncCount = 0;
+
+    function updateSyncIndicator() {
+        let el = document.getElementById("syncStatus");
+        if (!el) return;
+        if (pendingSyncCount > 0) {
+            el.dataset.baseText = el.dataset.baseText || el.innerText;
+            el.innerText = "🔄 Menghantar kemaskini ke server... (" + pendingSyncCount + ")";
+        } else if (el.dataset.baseText) {
+            el.innerText = "✅ Semua kemaskini telah disync ke server.";
+        }
+    }
+
     function pushToSheet(key, value) {
-        if (!apiReady()) return;
-        fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ key: key, value: value })
-        }).catch(err => console.warn("Gagal sync ke Google Sheet:", err));
+        if (!apiReady()) return Promise.resolve();
+        pendingSyncCount++;
+        updateSyncIndicator();
+        syncQueue = syncQueue.then(() =>
+            fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ key: key, value: value })
+            }).catch(err => console.warn("Gagal sync ke Google Sheet:", err))
+        ).finally(() => {
+            pendingSyncCount--;
+            updateSyncIndicator();
+        });
+        return syncQueue;
     }
 
     function saveState(key, value) {
