@@ -276,6 +276,18 @@ ol.numbered-list li::before{
   float:right;
   margin-right:8px;
 }
+.btn-history{
+  display:inline-block;
+  background:var(--gold);
+  color:#fff;
+  border-radius:9px;
+  padding:8px 14px;
+  font-size:13px;
+  font-weight:700;
+  text-decoration:none;
+  float:right;
+  margin-right:8px;
+}
 .sync-status{
   clear:both;
   font-size:12px;
@@ -675,6 +687,7 @@ button.is-loading::before{display:none}
     <div class="subtitle">Undian Rasmi & Paparan Carta Draw Sheet (Sifar Pertindihan Kumpulan)</div>
     <div id="syncStatus" class="sync-status no-print"></div>
     <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ Paparan Pemain (Live)</a>
+    <a href="sejarah.html" target="_blank" class="btn-history no-print">📜 Sejarah Draw Sheet</a>
     <button class="btn-reset no-print" onclick="resetSemua()">🗑️ Reset Semua Data</button>
 
     <!-- Prapendaftaran & Grouping -->
@@ -892,8 +905,28 @@ document.addEventListener("click", function(e){
         }
     }
 
-    function resetSemua() {
+    async function resetSemua() {
         if (!confirm("Padam semua data (nama pair, grouping, keputusan, carta kalah mati)? Tindakan ini tidak boleh diundur.")) return;
+
+        if (apiReady()) {
+            let label = prompt(
+                "Nama kejohanan ini untuk disimpan dalam Sejarah (kosongkan & OK untuk skip simpan):",
+                "Kejohanan " + new Date().toLocaleDateString("ms-MY")
+            );
+            if (label !== null && label.trim() !== "") {
+                try {
+                    await fetch(API_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({ action: "archive", label: label.trim() })
+                    });
+                } catch (err) {
+                    alert("Gagal simpan ke Sejarah (semak sambungan internet). Reset dibatalkan supaya data tak hilang.");
+                    return;
+                }
+            }
+        }
+
         localStorage.removeItem("pingpong_pairs");
         clearState("kbttc_undian_groups");
         clearState("kbttc_undian_ranks");

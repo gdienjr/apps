@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sejarah Draw Sheet — Kejohanan Lepas</title>
+<link rel="icon" href="icon-192.png" type="image/png">
+<style>
+:root{
+  --bg:#eef3f8;
+  --card:#ffffff;
+  --ink:#172033;
+  --muted:#6b778c;
+  --primary:#1769e0;
+  --primary2:#0d47a1;
+  --success:#0b9f6e;
+  --gold:#f59e0b;
+  --border:#dfe6ef;
+  --shadow:0 14px 40px rgba(25,45,75,.10);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  font-family:Inter,"Segoe UI",Tahoma,Arial,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 15% 0%,rgba(23,105,224,.12),transparent 28%),
+    radial-gradient(circle at 90% 10%,rgba(11,159,110,.10),transparent 25%),
+    var(--bg);
+  padding:20px 14px 50px;
+}
+.container{
+  width:min(1000px,100%);
+  margin:0 auto;
+}
+.top-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:16px;
+  flex-wrap:wrap;
+}
+.top-bar h1{
+  margin:0;
+  font-size:22px;
+  color:var(--primary2);
+}
+.live-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:12px;
+  font-weight:700;
+  color:var(--success);
+  background:rgba(11,159,110,.10);
+  border:1px solid rgba(11,159,110,.3);
+  padding:5px 10px;
+  border-radius:999px;
+}
+.live-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--success);
+  animation:blink 1.4s ease-in-out infinite;
+}
+@keyframes blink{0%{opacity:.35}50%{opacity:1}100%{opacity:.35}}
+.updated-txt{font-size:11.5px;color:var(--muted)}
+.panel{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  box-shadow:var(--shadow);
+  padding:18px 18px 20px;
+  margin-bottom:18px;
+}
+.panel h2{
+  margin:0 0 12px;
+  font-size:16px;
+  color:var(--ink);
+}
+.empty-msg{
+  color:var(--muted);
+  font-size:14px;
+  text-align:center;
+  padding:20px 10px;
+}
+.history-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#fbfcff;
+  margin-bottom:10px;
+  cursor:pointer;
+  transition:box-shadow .15s ease, transform .15s ease;
+}
+.history-item:hover{
+  box-shadow:0 6px 16px rgba(25,45,75,.10);
+  transform:translateY(-1px);
+}
+.history-item .h-label{font-weight:700;color:var(--primary2);font-size:15px}
+.history-item .h-date{font-size:12.5px;color:var(--muted);margin-top:3px}
+.history-item .h-arrow{color:var(--primary);font-size:18px}
+.btn-back{
+  background:none;
+  border:1px solid var(--border);
+  color:var(--primary2);
+  border-radius:9px;
+  padding:8px 14px;
+  font-size:13px;
+  cursor:pointer;
+  margin-bottom:14px;
+}
+.detail-title{
+  font-size:18px;
+  color:var(--primary2);
+  margin:0 0 14px;
+}
+.group-container{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.group-card{
+  background:#fbfcff;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:12px;
+}
+.group-card b{color:var(--primary2);display:block;margin-bottom:8px}
+ol.numbered-list{padding-left:0;list-style:none;margin:0}
+ol.numbered-list li{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  margin-bottom:7px;
+  font-size:14px;
+}
+.pos-badge{
+  flex:0 0 auto;
+  width:22px;height:22px;
+  border-radius:50%;
+  background:var(--primary);
+  color:#fff;
+  font-size:12px;
+  font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+li.medal-1 .pos-badge{background:#f5b63b}
+li.medal-2 .pos-badge{background:#9aa7b8}
+li.medal-3 .pos-badge{background:#c17a45}
+li.eliminated{opacity:.5;text-decoration:line-through}
+.medal-icon{font-size:14px}
+.q-list{list-style:none;padding:0;margin:0}
+.q-list li{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:9px 4px;
+  border-bottom:1px dashed var(--border);
+  font-size:14px;
+}
+.q-list li:last-child{border-bottom:none}
+.q-tag{color:var(--muted);font-size:12.5px}
+
+/* Bracket (read-only) */
+.bracket-box{
+  background:linear-gradient(135deg,#0d1830,#1b2f52);
+  padding:22px 20px;
+  border-radius:16px;
+  color:#f5f8ff;
+  overflow-x:auto;
+  border:1px solid rgba(255,255,255,.08);
+}
+.champion-banner{
+  margin-bottom:16px;
+  text-align:center;
+  font-size:16px;
+  font-weight:800;
+  color:#7a4a00;
+  background:linear-gradient(135deg,#ffe9b8,#ffd98a);
+  border:1px solid #f0c470;
+  border-radius:12px;
+  padding:14px;
+}
+.bracket-stage{margin-bottom:6px}
+.bracket-stage-label{
+  font-size:11px;
+  font-weight:800;
+  color:#8fa9d6;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  text-align:center;
+  margin-bottom:10px;
+}
+.bracket-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(110px,1fr));
+  gap:10px;
+}
+.bracket-grid.cols-2{grid-template-columns:repeat(2,minmax(130px,1fr))}
+.bracket-grid.cols-1{grid-template-columns:1fr;max-width:320px;margin:0 auto}
+.bracket-card{
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+  padding:10px 11px;
+  font-size:12px;
+  line-height:1.5;
+}
+.bracket-mini-label{
+  font-size:9.5px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  color:#7d93bd;
+  margin-bottom:3px;
+}
+.result-line{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:6px;
+  padding:5px 7px;
+  border-radius:7px;
+  margin-bottom:3px;
+  background:rgba(255,255,255,.04);
+}
+.result-line.is-winner{
+  background:rgba(11,159,110,.16);
+  border:1px solid rgba(11,159,110,.4);
+  font-weight:700;
+  color:#c9ffe6;
+}
+.result-line.is-loser{opacity:.45;text-decoration:line-through}
+.result-line.pending{opacity:.55;font-style:italic}
+.win-check{font-size:11px}
+.bracket-vs{
+  text-align:center;
+  font-size:10px;
+  color:#7d93bd;
+  margin:3px 0;
+}
+.bracket-card.final-card{
+  max-width:320px;
+  margin:0 auto;
+  border-color:rgba(245,182,59,.4);
+  background:linear-gradient(135deg,rgba(245,182,59,.14),rgba(255,255,255,.05));
+}
+.bracket-connector-svg{display:block;width:100%;height:34px;margin:-2px 0 2px}
+.bracket-connector-svg path{stroke:#5f77a3;stroke-width:1.6;fill:none}
+.bracket-heading{
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.04em;
+  color:#bcd0f5;
+  text-transform:uppercase;
+  text-align:center;
+  margin-bottom:18px;
+}
+@media(max-width:650px){
+  .group-container{grid-template-columns:1fr}
+  .bracket-box{padding:16px 12px}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="top-bar">
+        <h1>📜 Sejarah Draw Sheet</h1>
+        <div>
+            <div class="updated-txt" id="sourceTxt"></div>
+        </div>
+    </div>
+
+    <div class="panel" id="listPanel">
+        <h2>Senarai Kejohanan Lepas</h2>
+        <div id="historyList"><div class="empty-msg">Memuatkan senarai...</div></div>
+    </div>
+
+    <div id="detailPanels" style="display:none;">
+        <button class="btn-back no-print" onclick="backToList()">← Kembali ke Senarai</button>
+        <h2 class="detail-title" id="detailTitle"></h2>
+
+        <div class="panel">
+            <h2>🎲 Pecahan Kumpulan</h2>
+            <div id="groupArea"></div>
+        </div>
+
+        <div class="panel">
+            <h2>🏆 Penempatan Juara ke Suku Akhir</h2>
+            <div id="slotArea"></div>
+        </div>
+
+        <div class="panel">
+            <h2>📊 Carta Draw Sheet — Peringkat Kalah Mati</h2>
+            <div id="bracketArea"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadHistoryList() {
+    if (!apiReady()) {
+        document.getElementById("sourceTxt").innerText = "⚠️ API_URL belum ditetapkan";
+        document.getElementById("historyList").innerHTML = "<div class='empty-msg'>Sejarah memerlukan sambungan Google Sheet (API_URL). Sila tetapkan API_URL dalam fail ini dahulu.</div>";
+        return;
+    }
+    try {
+        let res = await fetch(`${API_URL}?action=history_list`, { cache: "no-store" });
+        let list = await res.json();
+        document.getElementById("sourceTxt").innerText = "🌐 Disambung ke Google Sheet";
+
+        if (!list.length) {
+            document.getElementById("historyList").innerHTML = "<div class='empty-msg'>Belum ada rekod kejohanan lepas. Rekod akan tersimpan bila admin tekan \"Reset Semua Data\" dan pilih untuk simpan.</div>";
+            return;
+        }
+
+        let html = "";
+        list.forEach(item => {
+            let dt = item.timestamp ? new Date(item.timestamp) : null;
+            let dateStr = dt ? dt.toLocaleString("ms-MY") : "";
+            html += `<div class="history-item" onclick="openHistory('${item.id}', '${escapeHtml(item.label).replace(/'/g, "\\'")}')">
+                <div><div class="h-label">${escapeHtml(item.label)}</div><div class="h-date">${dateStr}</div></div>
+                <div class="h-arrow">›</div>
+            </div>`;
+        });
+        document.getElementById("historyList").innerHTML = html;
+    } catch (err) {
+        document.getElementById("sourceTxt").innerText = "📴 Gagal hubungi Google Sheet";
+        document.getElementById("historyList").innerHTML = "<div class='empty-msg'>Gagal muatkan senarai sejarah. Semak sambungan internet.</div>";
+    }
+}
+
+async function openHistory(id, label) {
+    document.getElementById("listPanel").style.display = "none";
+    document.getElementById("detailPanels").style.display = "block";
+    document.getElementById("detailTitle").innerText = label;
+    document.getElementById("groupArea").innerHTML = "<div class='empty-msg'>Memuatkan...</div>";
+    document.getElementById("slotArea").innerHTML = "";
+    document.getElementById("bracketArea").innerHTML = "";
+
+    try {
+        let res = await fetch(`${API_URL}?action=history_get&id=${encodeURIComponent(id)}`, { cache: "no-store" });
+        let data = await res.json();
+        if (!data) {
+            document.getElementById("groupArea").innerHTML = "<div class='empty-msg'>Rekod tidak dijumpai.</div>";
+            return;
+        }
+
+        let groups = data.kbttc_undian_groups || {};
+        let ranks = data.kbttc_undian_ranks || {};
+        let slotJuara = data.kbttc_undian_slotjuara || {};
+        let p16draw = data.kbttc_undian_p16 || null;
+        let matches = data.kbttc_undian_matches || {};
+
+        document.getElementById("groupArea").innerHTML = renderGroups(groups, ranks) || "<div class='empty-msg'>Tiada data kumpulan.</div>";
+        document.getElementById("slotArea").innerHTML = renderSlotJuara(slotJuara, groups, ranks) || "<div class='empty-msg'>Tiada data penempatan juara.</div>";
+
+        if (p16draw) {
+            let state = computeBracketState(p16draw, groups, ranks, matches);
+            document.getElementById("bracketArea").innerHTML = renderBracket(state);
+        } else {
+            document.getElementById("bracketArea").innerHTML = "<div class='empty-msg'>Tiada carta pusingan 16 untuk rekod ini.</div>";
+        }
+    } catch (err) {
+        document.getElementById("groupArea").innerHTML = "<div class='empty-msg'>Gagal muatkan rekod ini.</div>";
+    }
+}
+
+function backToList() {
+    document.getElementById("detailPanels").style.display = "none";
+    document.getElementById("listPanel").style.display = "block";
+}
+
+const API_URL = "https://script.google.com/macros/s/AKfycbwk6IQCYNyNhfPIdMgsoFlUEYflFmXicq8zDPbJif5xkDXREoQZqgP2xMLliPy_82W27Q/exec";
+
+function apiReady() {
+    return API_URL && API_URL.startsWith("http");
+}
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function rankName(g, pos, groups, ranks) {
+    if (ranks[g] && groups[g]) {
+        let idx = ranks[g][`p${pos}`] - 1;
+        if (groups[g][idx]) return groups[g][idx];
+    }
+    let labels = { 1: "Juara", 2: "Naib Juara", 3: "Tempat Ke-3" };
+    return `${labels[pos]} ${g}`;
+}
+
+function renderGroups(groups, ranks) {
+    let keys = Object.keys(groups);
+    if (!keys.length) return null;
+    let html = "<div class='group-container'>";
+    keys.forEach(g => {
+        let r = ranks[g] || null;
+        html += `<div class='group-card'><b>Kumpulan ${g}</b><ol class="numbered-list">`;
+        groups[g].forEach((p, i) => {
+            let pos = i + 1;
+            let medalClass = "";
+            let medalIcon = "";
+            let elimClass = "";
+            if (r) {
+                if (r.p1 === pos) { medalClass = "medal-1"; medalIcon = "🥇 "; }
+                else if (r.p2 === pos) { medalClass = "medal-2"; medalIcon = "🥈 "; }
+                else if (r.p3 === pos) { medalClass = "medal-3"; medalIcon = "🥉 "; }
+                else { elimClass = "eliminated"; }
+            }
+            html += `<li class="${medalClass} ${elimClass}"><span class="pos-badge">${pos}</span><span class="medal-icon">${medalIcon}</span>${escapeHtml(p)}</li>`;
+        });
+        html += `</ol></div>`;
+    });
+    html += "</div>";
+    return html;
+}
+
+function renderSlotJuara(slotJuara, groups, ranks) {
+    if (!slotJuara || !Object.keys(slotJuara).length) return null;
+    let html = "<ul class='q-list'>";
+    ["Q1", "Q2", "Q3", "Q4"].forEach(q => {
+        let g = slotJuara[q];
+        if (!g) return;
+        html += `<li><span><b>${q}</b> — ${escapeHtml(rankName(g, 1, groups, ranks))}</span><span class="q-tag">Kumpulan ${g}</span></li>`;
+    });
+    html += "</ul>";
+    return html;
+}
+
+function computeBracketState(p16draw, groups, ranks, matches) {
+    let { qSlots, chosenRank2, rank3 } = p16draw;
+    let state = { r16: [], qf: [], sf: [] };
+
+    for (let i = 0; i < 4; i++) {
+        let sideA = rankName(chosenRank2[i], 2, groups, ranks);
+        let sideB = rankName(rank3[i], 3, groups, ranks);
+        let pick = matches[`r16-${i}`] || "";
+        let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+        state.r16.push({ sideA, sideB, pick, winnerName, enabled: true });
+    }
+    for (let i = 0; i < 4; i++) {
+        let dep = state.r16[i].winnerName;
+        let sideA = dep || `Pemenang Pusingan 16 (Q${i + 1})`;
+        let sideB = rankName(qSlots[i], 1, groups, ranks);
+        let pick = matches[`qf-${i}`] || "";
+        let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+        state.qf.push({ sideA, sideB, pick, winnerName, enabled: !!dep });
+    }
+    [[0, 1], [2, 3]].forEach((pair, si) => {
+        let depA = state.qf[pair[0]].winnerName;
+        let depB = state.qf[pair[1]].winnerName;
+        let sideA = depA || `Pemenang Q${pair[0] + 1}`;
+        let sideB = depB || `Pemenang Q${pair[1] + 1}`;
+        let pick = matches[`sf-${si}`] || "";
+        let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+        state.sf.push({ sideA, sideB, pick, winnerName, enabled: !!depA && !!depB });
+    });
+    let depA = state.sf[0].winnerName, depB = state.sf[1].winnerName;
+    let fSideA = depA || "Pemenang Separuh Akhir 1";
+    let fSideB = depB || "Pemenang Separuh Akhir 2";
+    let fPick = matches["final"] || "";
+    let fWinner = fPick === "A" ? fSideA : (fPick === "B" ? fSideB : null);
+    state.final = { sideA: fSideA, sideB: fSideB, pick: fPick, winnerName: fWinner, enabled: !!depA && !!depB };
+
+    return state;
+}
+
+function resultLine(m, side) {
+    let name = side === "A" ? m.sideA : m.sideB;
+    let cls = "result-line";
+    let check = "";
+    if (!m.enabled) {
+        cls += " pending";
+    } else if (m.pick === side) {
+        cls += " is-winner";
+        check = "<span class='win-check'>✔</span>";
+    } else if (m.pick && m.pick !== side) {
+        cls += " is-loser";
+    }
+    return `<div class="${cls}">${escapeHtml(name)} ${check}</div>`;
+}
+
+function renderBracket(state) {
+    let html = "";
+    if (state.final.winnerName) {
+        html += `<div class="champion-banner">🏆 JUARA KEJOHANAN: ${escapeHtml(state.final.winnerName)}</div>`;
+    }
+    html += `<div class="bracket-box">
+        <div class="bracket-heading">Pusingan 16 ➜ Suku Akhir ➜ Separuh Akhir ➜ Akhir</div>
+        <div class="bracket-stage">
+            <div class="bracket-stage-label">Pusingan 16 ➜ Suku Akhir</div>
+            <div class="bracket-grid">`;
+    for (let i = 0; i < 4; i++) {
+        html += `<div class="bracket-card">
+            <div class="bracket-mini-label">Pusingan 16</div>
+            ${resultLine(state.r16[i], "A")}
+            ${resultLine(state.r16[i], "B")}
+            <div class="bracket-vs">▾ pemenang lawan ▾</div>
+            <div class="bracket-mini-label">Suku Akhir (Q${i + 1})</div>
+            ${resultLine(state.qf[i], "A")}
+            ${resultLine(state.qf[i], "B")}
+        </div>`;
+    }
+    html += `</div></div>
+        <svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+            <path d="M12.5,0 L12.5,10 L25,20 L25,24"/>
+            <path d="M37.5,0 L37.5,10 L25,20"/>
+            <path d="M62.5,0 L62.5,10 L75,20 L75,24"/>
+            <path d="M87.5,0 L87.5,10 L75,20"/>
+        </svg>
+        <div class="bracket-stage">
+            <div class="bracket-stage-label">Separuh Akhir</div>
+            <div class="bracket-grid cols-2">
+                <div class="bracket-card">
+                    <div class="bracket-mini-label">Separuh Akhir 1</div>
+                    ${resultLine(state.sf[0], "A")}
+                    ${resultLine(state.sf[0], "B")}
+                </div>
+                <div class="bracket-card">
+                    <div class="bracket-mini-label">Separuh Akhir 2</div>
+                    ${resultLine(state.sf[1], "A")}
+                    ${resultLine(state.sf[1], "B")}
+                </div>
+            </div>
+        </div>
+        <svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+            <path d="M25,0 L25,10 L50,20 L50,24"/>
+            <path d="M75,0 L75,10 L50,20"/>
+        </svg>
+        <div class="bracket-stage">
+            <div class="bracket-stage-label">🏆 Akhir</div>
+            <div class="bracket-grid cols-1">
+                <div class="bracket-card final-card">
+                    <div class="bracket-mini-label">Perlawanan Akhir</div>
+                    ${resultLine(state.final, "A")}
+                    ${resultLine(state.final, "B")}
+                </div>
+            </div>
+        </div>
+    </div>`;
+    return html;
+}
+
+loadHistoryList();
+</script>
+
+</body>
+</html>
