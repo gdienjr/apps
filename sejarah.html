@@ -312,7 +312,7 @@ async function loadHistoryList() {
     try {
         let res = await fetch(`${API_URL}?action=history_list`, { cache: "no-store" });
         let list = await res.json();
-        document.getElementById("sourceTxt").innerText = "🌐 Disambung ke Google Sheet";
+        document.getElementById("sourceTxt").innerText = "🌐 Disambung ke Server";
 
         if (!list.length) {
             document.getElementById("historyList").innerHTML = "<div class='empty-msg'>Belum ada rekod kejohanan lepas. Rekod akan tersimpan bila admin tekan \"Reset Semua Data\" dan pilih untuk simpan.</div>";

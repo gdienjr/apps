@@ -273,7 +273,7 @@ async function fetchState() {
         try {
             let res = await fetch(API_URL, { cache: "no-store" });
             let data = await res.json();
-            document.getElementById("sourceTxt").innerText = "🌐 Live dari Google Sheet";
+            document.getElementById("sourceTxt").innerText = "🌐 Live dari Server";
             return {
                 groups: data.kbttc_undian_groups || {},
                 ranks: data.kbttc_undian_ranks || {},
