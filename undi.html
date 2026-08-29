@@ -503,6 +503,30 @@ table.score-table th.no-col{
   font-weight:700;
 }
 .pick-select option{color:#111}
+.pick-names{
+  margin-bottom:6px;
+  padding:8px 9px;
+  border-radius:8px;
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.10);
+}
+.pick-names.is-pending{opacity:.55}
+.pick-name-line{
+  font-size:14px;
+  font-weight:700;
+  color:#eaf1ff;
+  line-height:1.4;
+  word-break:break-word;
+}
+.pick-name-line.is-pick-winner{color:#7be8b9}
+.pick-name-line.is-pick-loser{color:#8a97b3;font-weight:500;text-decoration:line-through}
+.pick-vs-tiny{
+  font-size:9.5px;
+  color:#7d93bd;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  margin:2px 0;
+}
 .champion-banner{
   margin-bottom:16px;
   text-align:center;
@@ -1220,9 +1244,25 @@ document.addEventListener("click", function(e){
 
     function pickRow(m) {
         let disabled = m.enabled ? "" : "disabled";
+        // Papar nama KEDUA-DUA pihak sebagai teks terus (bukan tersembunyi
+        // dalam dropdown) — supaya pengurus/pengadil senang baca & panggil
+        // nama pemain yang sedang menunggu giliran, tanpa perlu klik buka
+        // dropdown dahulu. Dropdown di bawah cuma untuk REKOD pemenang
+        // selepas perlawanan selesai.
+        let lineA = `<div class="pick-name-line ${m.pick === "A" ? "is-pick-winner" : (m.pick === "B" ? "is-pick-loser" : "")}">
+            ${m.pick === "A" ? "✅" : "▫️"} ${escapeHtml(m.sideA)}
+        </div>`;
+        let lineB = `<div class="pick-name-line ${m.pick === "B" ? "is-pick-winner" : (m.pick === "A" ? "is-pick-loser" : "")}">
+            ${m.pick === "B" ? "✅" : "▫️"} ${escapeHtml(m.sideB)}
+        </div>`;
         return `<div class="pick-row">
+            <div class="pick-names ${m.enabled ? "" : "is-pending"}">
+                ${lineA}
+                <div class="pick-vs-tiny">lwn</div>
+                ${lineB}
+            </div>
             <select class="pick-select ${m.pick ? "has-winner" : ""}" ${disabled} onchange="pilihPemenang('${m.id}', this.value)">
-                <option value="">${m.enabled ? "-- pilih pemenang --" : "menunggu keputusan sebelum ini"}</option>
+                <option value="">${m.enabled ? "-- rekod pemenang --" : "menunggu keputusan sebelum ini"}</option>
                 <option value="A" ${m.pick === "A" ? "selected" : ""}>${escapeHtml(m.sideA)}</option>
                 <option value="B" ${m.pick === "B" ? "selected" : ""}>${escapeHtml(m.sideB)}</option>
             </select>
