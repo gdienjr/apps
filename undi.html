@@ -838,12 +838,12 @@ document.addEventListener("click", function(e){
 
     function saveState(key, value) {
         localStorage.setItem(key, JSON.stringify(value));
-        pushToSheet(key, value);
+        return pushToSheet(key, value);
     }
 
     function clearState(key) {
         localStorage.removeItem(key);
-        pushToSheet(key, null);
+        return pushToSheet(key, null);
     }
 
     async function pullFromSheet() {
@@ -960,11 +960,25 @@ document.addEventListener("click", function(e){
         }
 
         localStorage.removeItem("pingpong_pairs");
-        clearState("kbttc_undian_groups");
-        clearState("kbttc_undian_ranks");
-        clearState("kbttc_undian_slotjuara");
-        clearState("kbttc_undian_p16");
-        clearState("kbttc_undian_matches");
+
+        // PENTING: kena TUNGGU (await) semua proses "delete" ini sampai
+        // habis ke server dahulu sebelum reload. Kalau location.reload()
+        // dipanggil serta-merta selepas clearState() (macam kod asal),
+        // request POST yang belum sempat sampai ke server akan TERBATAL
+        // oleh reload tu — jadi Google Sheet masih simpan data LAMA.
+        // Bila page reload, pullFromSheet() akan tarik balik data lama
+        // itu dan "hidupkan semula" hasil undian yang sepatutnya dah
+        // dipadam (walhal Senarai Nama Pemain reset betul sebab ia
+        // 100% local, tiada sync ke server).
+        document.getElementById("syncStatus").innerText = "🔄 Memadam data di server, sila tunggu...";
+        await Promise.all([
+            clearState("kbttc_undian_groups"),
+            clearState("kbttc_undian_ranks"),
+            clearState("kbttc_undian_slotjuara"),
+            clearState("kbttc_undian_p16"),
+            clearState("kbttc_undian_matches")
+        ]);
+
         location.reload();
     }
 
