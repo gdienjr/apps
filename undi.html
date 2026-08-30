@@ -368,15 +368,14 @@ table.score-table th.no-col{
 .no-print{}
 
 @media print{
-  @page{ size: auto; margin: 10mm; }
-  html, body{
-    width:100vh;
-    height:100vw;
-  }
-  body{
-    transform: rotate(90deg) translateY(-100%);
-    transform-origin: top left;
-  }
+  /* Guna @page size:landscape terus supaya browser uruskan orientasi
+     dengan betul. SEBELUM ni, kod paksa "putar" seluruh body 90darjah
+     (transform:rotate) dengan andaian dialog cetak berada dalam mod
+     Portrait -- tapi kalau admin pilih "Layout: Landscape" secara
+     manual dalam dialog cetak (macam kebiasaan orang buat), kandungan
+     jadi berputar DUA KALI (sekali oleh browser, sekali oleh CSS),
+     menyebabkan teks/jadual nampak condong/tepi dalam pratonton cetak. */
+  @page{ size: landscape; margin: 10mm; }
   body *{visibility:hidden}
   #printArea, #printArea *{visibility:visible}
   #printArea{position:absolute;top:0;left:0;width:100%}
@@ -384,14 +383,7 @@ table.score-table th.no-col{
     border:2px solid #000;
     box-shadow:none;
     page-break-after:always;
-    height:100%;
     box-sizing:border-box;
-    display:flex;
-    flex-direction:column;
-  }
-  .score-sheet-page table.score-table{
-    flex:1 1 auto;
-    height:100%;
   }
   .score-sheet-page table.score-table td,
   .score-sheet-page table.score-table th{
@@ -732,23 +724,23 @@ button.is-loading::before{display:none}
     <h2>🏓 KBTTC-Sistem Kejohanan Pingpong</h2>
     <div class="subtitle"></div>
     <div id="syncStatus" class="sync-status no-print"></div>
-    <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ View(Live)</a>
-    <a href="sejarah.html" target="_blank" class="btn-history no-print">📜 History</a>
+    <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ Paparan Pemain (Live)</a>
+    <a href="sejarah.html" target="_blank" class="btn-history no-print">📜 Sejarah Draw Sheet</a>
     <button class="btn-reset no-print" onclick="resetSemua()">🗑️ Reset Semua Data</button>
 
     <!-- Tajuk Kejohanan -->
     <div class="stage no-print" id="titleStage">
-        <h4>🏷️ Nama Game</h4>
-        <p></p>
+        <h3>🏷️ Tajuk Kejohanan</h3>
+        <p>Nama kejohanan ini akan dipaparkan di paparan pemain (papar.html).</p>
         <input type="text" id="tournamentTitleInput" placeholder="Contoh: Kejohanan Pingpong Beregu KBTTC 2026" class="title-input">
-        <button onclick="simpanTajuk()">💾 Save Nama Game</button>
+        <button onclick="simpanTajuk()">💾 Simpan Tajuk Kejohanan</button>
         <span id="titleSavedStatus" class="saved-msg"></span>
     </div>
 
     <!-- Pesanan Pengurus Perlawanan (Ticker) -->
     <div class="stage no-print" id="announcementStage">
         <h3>📢 Pesanan Pengurus Perlawanan</h3>
-        <p></p>
+        <p>Teks ini akan terpapar sebagai skrol bergerak di bahagian bawah papar.html. Kosongkan & simpan untuk sembunyikan ticker.</p>
         <input type="text" id="announcementInput" placeholder="Contoh: Sila hadir ke gelanggang 2 dalam masa 5 minit." class="title-input">
         <button onclick="simpanPesanan()">💾 Simpan Pesanan</button>
         <span id="announcementSavedStatus" class="saved-msg"></span>
@@ -757,8 +749,8 @@ button.is-loading::before{display:none}
     <!-- Prapendaftaran & Grouping -->
     <div class="stage">
     
-        <p>Masukkan senarai nama</p>
-        <p style="margin:-8px 0 12px;font-size:12.5px;color:var(--muted);"></p>
+        <p>Masukkan senarai nama pair(satu nama setiap baris). Klik <b>Simpan Nama</b>:</p>
+        <p style="margin:-8px 0 12px;font-size:12.5px;color:var(--muted);">💡 Copy-paste terus dari WhatsApp Group? Tekan <b>"Bersihkan Nombor"</b> dulu untuk buang nombor/bullet automatik sebelum simpan.</p>
         <textarea id="pairInput" placeholder="Contoh:&#10;Pair Ali/Abu&#10;Pair Muthu/Samy&#10;..."></textarea>
         <button type="button" class="btn-clean" onclick="bersihkanNombor()">🧹 Bersihkan Nombor</button>
         <button class="btn-save" onclick="simpanNama()">💾 Simpan Senarai Nama</button>
@@ -1194,10 +1186,20 @@ document.addEventListener("click", function(e){
 
             let groups = { A: [], B: [], C: [], D: [] };
             let groupKeys = ['A', 'B', 'C', 'D'];
-            
+
+            // PENTING: bila jumlah peserta tidak boleh dibahagi tepat dengan 4
+            // (contoh 22 peserta -> baki 2), seseorang KENA dapat kumpulan
+            // lebih ramai. Kalau kita agih ikut urutan tetap A->B->C->D setiap
+            // kali, kumpulan yang dapat "baki extra" tu akan SENTIASA sama
+            // (A & B) walau macam mana pun nama di-shuffle -- ini tak adil
+            // sebab kumpulan lebih ramai bermakna lebih banyak perlawanan
+            // round-robin. Jadi kita rawakkan JUGA urutan kumpulan mana yang
+            // dapat baki extra pada setiap kali Undian Grouping ditekan.
+            let shuffledKeys = [...groupKeys].sort(() => Math.random() - 0.5);
+
             pairs.forEach((pair, index) => {
                 let gIndex = index % 4;
-                groups[groupKeys[gIndex]].push(pair);
+                groups[shuffledKeys[gIndex]].push(pair);
             });
 
             let html = renderGroupResult(groups);
