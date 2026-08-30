@@ -1,4 +1,4 @@
-const CACHE_NAME = "kbttc-undian-v6";
+const CACHE_NAME = "kbttc-undian-v7";
 const FILES_TO_CACHE = [
   "./undi.html",
   "./papar.html",
