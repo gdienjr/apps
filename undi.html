@@ -721,7 +721,7 @@ button.is-loading::before{display:none}
 <body>
 
 <div class="container">
-    <h2>🏓 KBTTC-Sistem Game Pingpong</h2>
+    <h4>🏓 KBTTC-Sistem Game Pingpong</h4>
     <div class="subtitle"></div>
     <div id="syncStatus" class="sync-status no-print"></div>
     <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ View(Live)</a>
@@ -730,10 +730,10 @@ button.is-loading::before{display:none}
 
     <!-- Tajuk Kejohanan -->
     <div class="stage no-print" id="titleStage">
-        <h3>🏷️ Nama Game</h3>
+        <h4>🏷️ Nama Game</h4>
         <p></p>
         <input type="text" id="tournamentTitleInput" placeholder="Contoh: Kejohanan Pingpong Beregu KBTTC 2026" class="title-input">
-        <button onclick="simpanTajuk()">💾 Simpan Tajuk Kejohanan</button>
+        <button onclick="simpanTajuk()">💾 Simpan Nama Game</button>
         <span id="titleSavedStatus" class="saved-msg"></span>
     </div>
 
@@ -925,7 +925,7 @@ document.addEventListener("click", function(e){
     }
 
     function renderGroupResult(groups) {
-        let html = "<b>✨ Hasil Undian Kumpulan:</b><div class='group-container'>";
+        let html = "<b>✨ Hasil Undian Group:</b><div class='group-container'>";
         Object.keys(groups).forEach(g => {
             html += `<div class='group-card'><b>Kumpulan ${g}:</b><ol class="numbered-list">`;
             groups[g].forEach(p => html += `<li>${p}</li>`);
@@ -941,7 +941,7 @@ document.addEventListener("click", function(e){
         Object.keys(groups).forEach(g => {
             let n = groups[g].length;
             html += `<div class="rank-group-card">
-                <h4>Kumpulan ${g}</h4>
+                <h4>Group ${g}</h4>
                 <div class="rank-inputs">
                     <label>🥇 Tempat 1 <input type="number" min="1" max="${n}" id="rankIn-${g}-1"></label>
                     <label>🥈 Tempat 2 <input type="number" min="1" max="${n}" id="rankIn-${g}-2"></label>
