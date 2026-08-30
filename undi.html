@@ -1226,6 +1226,16 @@ document.addEventListener("click", function(e){
         }, 5000);
     }
 
+    // Pisahkan nama pair pada tanda "/" (contoh: "Ch/yusof Skat") supaya
+    // dipaparkan dua baris dalam jadual markah — "Ch/" di baris atas dan
+    // "yusof Skat" di baris bawah. Kalau tiada "/", nama dipaparkan macam biasa.
+    function formatPairForTable(name) {
+        let safe = escapeHtml(name);
+        let idx = safe.indexOf("/");
+        if (idx === -1) return safe;
+        return safe.slice(0, idx + 1) + "<br>" + safe.slice(idx + 1).trim();
+    }
+
     function cetakJadualMarkah() {
         let groupKeys = Object.keys(currentGroups);
         if (groupKeys.length === 0) {
@@ -1242,11 +1252,11 @@ document.addEventListener("click", function(e){
 
             html += `<div class="score-sheet-page"><h4>GROUP ${g}</h4>`;
             html += `<table class="score-table"><thead><tr><th class="no-col"></th><th>KUMPULAN</th>`;
-            for (let c = 1; c <= n; c++) html += `<th>${pairs[c - 1]}</th>`;
+            for (let c = 1; c <= n; c++) html += `<th>${formatPairForTable(pairs[c - 1])}</th>`;
             html += `<th>JUMLAH</th><th>RANK</th></tr></thead><tbody>`;
 
             for (let r = 1; r <= n; r++) {
-                html += `<tr><th class="no-col">${r}</th><td class="nama-col">${pairs[r - 1]}</td>`;
+                html += `<tr><th class="no-col">${r}</th><td class="nama-col">${formatPairForTable(pairs[r - 1])}</td>`;
                 for (let c = 1; c <= n; c++) {
                     html += (c === r) ? `<td class="blocked"></td>` : `<td></td>`;
                 }
