@@ -236,12 +236,17 @@ li.eliminated{opacity:.5;text-decoration:line-through}
 
 <div class="container">
     <div class="top-bar">
-        <h1>🏓 Keputusan & Carta Kejohanan</h1>
+        <h1 id="mainTitle">🏓 Keputusan & Carta Kejohanan</h1>
         <div>
             <span class="live-badge"><span class="live-dot"></span> LIVE</span>
             <div class="updated-txt" id="sourceTxt"></div>
             <div class="updated-txt" id="updatedTxt"></div>
         </div>
+    </div>
+
+    <div class="panel" id="pesertaPanel" style="display:none;">
+        <h2>👥 Senarai Peserta Berdaftar</h2>
+        <div id="pesertaArea"></div>
     </div>
 
     <div class="panel">
@@ -260,6 +265,7 @@ li.eliminated{opacity:.5;text-decoration:line-through}
     </div>
 </div>
 
+
 <script>
 // Ganti URL bawah dengan "Web app URL" yang sama seperti dalam undi.html.
 const API_URL = "https://script.google.com/macros/s/AKfycbwk6IQCYNyNhfPIdMgsoFlUEYflFmXicq8zDPbJif5xkDXREoQZqgP2xMLliPy_82W27Q/exec";
@@ -275,6 +281,8 @@ async function fetchState() {
             let data = await res.json();
             document.getElementById("sourceTxt").innerText = "🌐 Live dari Server";
             return {
+                title: data.kbttc_undian_title || "",
+                peserta: data.kbttc_undian_peserta || [],
                 groups: data.kbttc_undian_groups || {},
                 ranks: data.kbttc_undian_ranks || {},
                 slotJuara: data.kbttc_undian_slotjuara || {},
@@ -287,6 +295,8 @@ async function fetchState() {
     }
     document.getElementById("sourceTxt").innerText = "📴 Guna simpanan tempatan (peranti ini sahaja)";
     return {
+        title: JSON.parse(localStorage.getItem("kbttc_undian_title") || "\"\""),
+        peserta: JSON.parse(localStorage.getItem("kbttc_undian_peserta") || "[]"),
         groups: JSON.parse(localStorage.getItem("kbttc_undian_groups") || "{}"),
         ranks: JSON.parse(localStorage.getItem("kbttc_undian_ranks") || "{}"),
         slotJuara: JSON.parse(localStorage.getItem("kbttc_undian_slotjuara") || "{}"),
@@ -460,8 +470,29 @@ function renderBracket(state) {
     return html;
 }
 
+function renderPeserta(peserta) {
+    if (!peserta || !peserta.length) return null;
+    let html = `<p style="margin:0 0 10px;color:var(--muted);font-size:13px;">Jumlah peserta didaftarkan: <b>${peserta.length}</b></p><ol class="numbered-list">`;
+    peserta.forEach((p, i) => {
+        html += `<li><span class="pos-badge">${i + 1}</span>${escapeHtml(p)}</li>`;
+    });
+    html += "</ol>";
+    return html;
+}
+
 async function renderAll() {
-    let { groups, ranks, slotJuara, p16draw, matches } = await fetchState();
+    let { title, peserta, groups, ranks, slotJuara, p16draw, matches } = await fetchState();
+
+    document.getElementById("mainTitle").innerText = (title && title.trim()) ? title : "🏓 Keputusan & Carta Kejohanan";
+
+    let pesertaPanel = document.getElementById("pesertaPanel");
+    let hasGroups = groups && Object.keys(groups).length > 0;
+    if (peserta && peserta.length && !hasGroups) {
+        pesertaPanel.style.display = "block";
+        document.getElementById("pesertaArea").innerHTML = renderPeserta(peserta) || "<div class='empty-msg'>Tiada peserta didaftarkan.</div>";
+    } else {
+        pesertaPanel.style.display = "none";
+    }
 
     let groupHtml = renderGroups(groups, ranks);
     document.getElementById("groupArea").innerHTML = groupHtml || "<div class='empty-msg'>Belum ada undian kumpulan lagi.</div>";

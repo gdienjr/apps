@@ -113,6 +113,23 @@ textarea{
   outline:none;
   transition:.2s;
 }
+.title-input{
+  width:100%;
+  padding:12px 14px;
+  border:1px solid #cfd8e5;
+  border-radius:13px;
+  box-sizing:border-box;
+  font:14px/1.5 inherit;
+  color:var(--ink);
+  background:#fbfcfe;
+  outline:none;
+  transition:.2s;
+}
+.title-input:focus{
+  border-color:var(--primary);
+  box-shadow:0 0 0 4px rgba(23,105,224,.10);
+  background:#fff;
+}
 textarea:focus{
   border-color:var(--primary);
   box-shadow:0 0 0 4px rgba(23,105,224,.10);
@@ -707,17 +724,26 @@ button.is-loading::before{display:none}
 <body>
 
 <div class="container">
-    <h4>🏓 KBTTC-Sistem Kejohanan Pingpong</h4>
+    <h2>🏓 KBTTC-Sistem Kejohanan Pingpong</h2>
     <div class="subtitle"></div>
     <div id="syncStatus" class="sync-status no-print"></div>
-    <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ View(Live)</a>
-    <a href="sejarah.html" target="_blank" class="btn-history no-print">📜 History</a>
+    <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ Paparan Pemain (Live)</a>
+    <a href="sejarah.html" target="_blank" class="btn-history no-print">📜 Sejarah Draw Sheet</a>
     <button class="btn-reset no-print" onclick="resetSemua()">🗑️ Reset Semua Data</button>
+
+    <!-- Tajuk Kejohanan -->
+    <div class="stage no-print" id="titleStage">
+        <h3>🏷️ Tajuk Kejohanan</h3>
+        <p>Nama kejohanan ini akan dipaparkan di paparan pemain (papar.html).</p>
+        <input type="text" id="tournamentTitleInput" placeholder="Contoh: Kejohanan Pingpong Beregu KBTTC 2026" class="title-input">
+        <button onclick="simpanTajuk()">💾 Simpan Tajuk Kejohanan</button>
+        <span id="titleSavedStatus" class="saved-msg"></span>
+    </div>
 
     <!-- Prapendaftaran & Grouping -->
     <div class="stage">
     
-        <p>Masukkan senarai nama.</p>
+        <p>Masukkan senarai nama pair(satu nama setiap baris). Klik <b>Simpan Nama</b>:</p>
         <textarea id="pairInput" placeholder="Contoh:&#10;Pair Ali/Abu&#10;Pair Muthu/Samy&#10;..."></textarea>
         <button class="btn-save" onclick="simpanNama()">💾 Simpan Senarai Nama</button>
         <span id="savedStatus" class="saved-msg"></span>
@@ -875,7 +901,7 @@ document.addEventListener("click", function(e){
         try {
             let res = await fetch(API_URL, { cache: "no-store" });
             let data = await res.json();
-            let keys = ["kbttc_undian_groups", "kbttc_undian_ranks", "kbttc_undian_slotjuara", "kbttc_undian_p16", "kbttc_undian_matches"];
+            let keys = ["kbttc_undian_title", "kbttc_undian_peserta", "kbttc_undian_groups", "kbttc_undian_ranks", "kbttc_undian_slotjuara", "kbttc_undian_p16", "kbttc_undian_matches"];
             keys.forEach(k => {
                 if (data[k] !== undefined && data[k] !== null) {
                     localStorage.setItem(k, JSON.stringify(data[k]));
@@ -996,6 +1022,7 @@ document.addEventListener("click", function(e){
         // 100% local, tiada sync ke server).
         document.getElementById("syncStatus").innerText = "🔄 Memadam data di server, sila tunggu...";
         await Promise.all([
+            clearState("kbttc_undian_peserta"),
             clearState("kbttc_undian_groups"),
             clearState("kbttc_undian_ranks"),
             clearState("kbttc_undian_slotjuara"),
@@ -1015,6 +1042,15 @@ document.addEventListener("click", function(e){
                 : "📴 Gagal hubungi Google Sheet — guna simpanan tempatan.";
         } else {
             document.getElementById("syncStatus").innerText = "📴 Sync Server belum diaktifkan (guna simpanan tempatan sahaja).";
+        }
+
+        let savedTitle = localStorage.getItem("kbttc_undian_title");
+        if (savedTitle) {
+            try {
+                document.getElementById("tournamentTitleInput").value = JSON.parse(savedTitle);
+            } catch (e) {
+                document.getElementById("tournamentTitleInput").value = savedTitle;
+            }
         }
 
         let savedData = localStorage.getItem("pingpong_pairs");
@@ -1064,6 +1100,19 @@ document.addEventListener("click", function(e){
         setTimeout(() => {
             document.getElementById("savedStatus").innerText = "✔ Nama tersimpan dalam peranti ini.";
         }, 5000);
+
+        // Sync senarai peserta ke server supaya papar.html boleh papar
+        // senarai peserta walaupun undian kumpulan belum dijalankan lagi.
+        let pesertaList = inputVal.split("\n").map(p => p.trim()).filter(p => p.length > 0);
+        saveState("kbttc_undian_peserta", pesertaList);
+    }
+
+    function simpanTajuk() {
+        let val = document.getElementById("tournamentTitleInput").value.trim();
+        saveState("kbttc_undian_title", val);
+        let statusEl = document.getElementById("titleSavedStatus");
+        statusEl.innerText = "✔ Tajuk disimpan!";
+        setTimeout(() => { statusEl.innerText = ""; }, 4000);
     }
 
     function buatGrouping() {
