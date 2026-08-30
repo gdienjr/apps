@@ -721,17 +721,17 @@ button.is-loading::before{display:none}
 <body>
 
 <div class="container">
-    <h2>🏓 KBTTC-Sistem Kejohanan Pingpong</h2>
+    <h2>🏓 KBTTC-Sistem Game Pingpong</h2>
     <div class="subtitle"></div>
     <div id="syncStatus" class="sync-status no-print"></div>
-    <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ Paparan Pemain (Live)</a>
-    <a href="sejarah.html" target="_blank" class="btn-history no-print">📜 Sejarah Draw Sheet</a>
+    <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ View(Live)</a>
+    <a href="sejarah.html" target="_blank" class="btn-history no-print">📜 History</a>
     <button class="btn-reset no-print" onclick="resetSemua()">🗑️ Reset Semua Data</button>
 
     <!-- Tajuk Kejohanan -->
     <div class="stage no-print" id="titleStage">
-        <h3>🏷️ Tajuk Kejohanan</h3>
-        <p>Nama kejohanan ini akan dipaparkan di paparan pemain (papar.html).</p>
+        <h3>🏷️ Nama Game</h3>
+        <p></p>
         <input type="text" id="tournamentTitleInput" placeholder="Contoh: Kejohanan Pingpong Beregu KBTTC 2026" class="title-input">
         <button onclick="simpanTajuk()">💾 Simpan Tajuk Kejohanan</button>
         <span id="titleSavedStatus" class="saved-msg"></span>
@@ -740,7 +740,7 @@ button.is-loading::before{display:none}
     <!-- Pesanan Pengurus Perlawanan (Ticker) -->
     <div class="stage no-print" id="announcementStage">
         <h3>📢 Pesanan Pengurus Perlawanan</h3>
-        <p>Teks ini akan terpapar sebagai skrol bergerak di bahagian bawah papar.html. Kosongkan & simpan untuk sembunyikan ticker.</p>
+        <p></p>
         <input type="text" id="announcementInput" placeholder="Contoh: Sila hadir ke gelanggang 2 dalam masa 5 minit." class="title-input">
         <button onclick="simpanPesanan()">💾 Simpan Pesanan</button>
         <span id="announcementSavedStatus" class="saved-msg"></span>
@@ -749,8 +749,8 @@ button.is-loading::before{display:none}
     <!-- Prapendaftaran & Grouping -->
     <div class="stage">
     
-        <p>Masukkan senarai nama pair(satu nama setiap baris). Klik <b>Simpan Nama</b>:</p>
-        <p style="margin:-8px 0 12px;font-size:12.5px;color:var(--muted);">💡 Copy-paste terus dari WhatsApp Group? Tekan <b>"Bersihkan Nombor"</b> dulu untuk buang nombor/bullet automatik sebelum simpan.</p>
+        <p>Masukkan senarai nama. </p>
+        <p style="margin:-8px 0 12px;font-size:12.5px;color:var(--muted);"></p>
         <textarea id="pairInput" placeholder="Contoh:&#10;Pair Ali/Abu&#10;Pair Muthu/Samy&#10;..."></textarea>
         <button type="button" class="btn-clean" onclick="bersihkanNombor()">🧹 Bersihkan Nombor</button>
         <button class="btn-save" onclick="simpanNama()">💾 Simpan Senarai Nama</button>
