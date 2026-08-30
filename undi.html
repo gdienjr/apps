@@ -157,6 +157,11 @@ button.btn-save{
   box-shadow:0 7px 16px rgba(11,159,110,.18);
 }
 button.btn-save:hover{box-shadow:0 10px 20px rgba(11,159,110,.22)}
+button.btn-clean{
+  background:linear-gradient(135deg,var(--gold),#f7c25e);
+  box-shadow:0 7px 16px rgba(245,158,11,.20);
+}
+button.btn-clean:hover{box-shadow:0 10px 20px rgba(245,158,11,.24)}
 .saved-msg{
   color:var(--success);
   font-size:13px;
@@ -740,11 +745,22 @@ button.is-loading::before{display:none}
         <span id="titleSavedStatus" class="saved-msg"></span>
     </div>
 
+    <!-- Pesanan Pengurus Perlawanan (Ticker) -->
+    <div class="stage no-print" id="announcementStage">
+        <h3>📢 Pesanan Pengurus Perlawanan</h3>
+        <p>Teks ini akan terpapar sebagai skrol bergerak di bahagian bawah papar.html. Kosongkan & simpan untuk sembunyikan ticker.</p>
+        <input type="text" id="announcementInput" placeholder="Contoh: Sila hadir ke gelanggang 2 dalam masa 5 minit." class="title-input">
+        <button onclick="simpanPesanan()">💾 Simpan Pesanan</button>
+        <span id="announcementSavedStatus" class="saved-msg"></span>
+    </div>
+
     <!-- Prapendaftaran & Grouping -->
     <div class="stage">
     
         <p>Masukkan senarai nama pair(satu nama setiap baris). Klik <b>Simpan Nama</b>:</p>
+        <p style="margin:-8px 0 12px;font-size:12.5px;color:var(--muted);">💡 Copy-paste terus dari WhatsApp Group? Tekan <b>"Bersihkan Nombor"</b> dulu untuk buang nombor/bullet automatik sebelum simpan.</p>
         <textarea id="pairInput" placeholder="Contoh:&#10;Pair Ali/Abu&#10;Pair Muthu/Samy&#10;..."></textarea>
+        <button type="button" class="btn-clean" onclick="bersihkanNombor()">🧹 Bersihkan Nombor</button>
         <button class="btn-save" onclick="simpanNama()">💾 Simpan Senarai Nama</button>
         <span id="savedStatus" class="saved-msg"></span>
         <button id="btnGroup" onclick="buatGrouping()">🎲 Undian Grouping (A, B, C, D)</button>
@@ -901,7 +917,7 @@ document.addEventListener("click", function(e){
         try {
             let res = await fetch(API_URL, { cache: "no-store" });
             let data = await res.json();
-            let keys = ["kbttc_undian_title", "kbttc_undian_peserta", "kbttc_undian_groups", "kbttc_undian_ranks", "kbttc_undian_slotjuara", "kbttc_undian_p16", "kbttc_undian_matches"];
+            let keys = ["kbttc_undian_title", "kbttc_undian_announcement", "kbttc_undian_peserta", "kbttc_undian_groups", "kbttc_undian_ranks", "kbttc_undian_slotjuara", "kbttc_undian_p16", "kbttc_undian_matches"];
             keys.forEach(k => {
                 if (data[k] !== undefined && data[k] !== null) {
                     localStorage.setItem(k, JSON.stringify(data[k]));
@@ -1053,6 +1069,15 @@ document.addEventListener("click", function(e){
             }
         }
 
+        let savedAnnouncement = localStorage.getItem("kbttc_undian_announcement");
+        if (savedAnnouncement) {
+            try {
+                document.getElementById("announcementInput").value = JSON.parse(savedAnnouncement);
+            } catch (e) {
+                document.getElementById("announcementInput").value = savedAnnouncement;
+            }
+        }
+
         let savedData = localStorage.getItem("pingpong_pairs");
         if (savedData) {
             document.getElementById("pairInput").value = savedData;
@@ -1093,6 +1118,33 @@ document.addEventListener("click", function(e){
         renderPusingan16UI();
     };
 
+    // Buang nombor/bullet biasa yang terikut sekali bila copy-paste dari
+    // WhatsApp Group (contoh: "1. Ali/Abu", "2) Muthu/Samy", "(3) ...",
+    // "1️⃣ ...", "- ...", "• ..."), supaya admin tak perlu edit satu-satu.
+    function stripLeadingNumbering(line) {
+        let s = line;
+        // Emoji "keycap" digit (1️⃣, 2️⃣, 10️⃣ dsb.)
+        s = s.replace(/^[\s]*[0-9]+[\uFE0F\u20E3]+[\s]*/u, "");
+        // Format "1.", "1)", "(1)", "01-", "1:", dsb.
+        s = s.replace(/^[\s]*\(?\d{1,3}\)?[.\):\-]?[\s]*/, "");
+        // Bullet biasa "-", "*", "•"
+        s = s.replace(/^[\s]*[-*•]+[\s]*/, "");
+        return s.trim();
+    }
+
+    function bersihkanNombor() {
+        let ta = document.getElementById("pairInput");
+        let lines = ta.value.split("\n");
+        let cleaned = lines
+            .map(l => stripLeadingNumbering(l))
+            .filter(l => l.length > 0);
+        ta.value = cleaned.join("\n");
+
+        let statusEl = document.getElementById("savedStatus");
+        statusEl.innerText = "🧹 Nombor & bullet dibuang — sila semak, lepas tu tekan \"Simpan Senarai Nama\".";
+        setTimeout(() => { statusEl.innerText = ""; }, 6000);
+    }
+
     function simpanNama() {
         let inputVal = document.getElementById("pairInput").value;
         localStorage.setItem("pingpong_pairs", inputVal);
@@ -1112,6 +1164,14 @@ document.addEventListener("click", function(e){
         saveState("kbttc_undian_title", val);
         let statusEl = document.getElementById("titleSavedStatus");
         statusEl.innerText = "✔ Tajuk disimpan!";
+        setTimeout(() => { statusEl.innerText = ""; }, 4000);
+    }
+
+    function simpanPesanan() {
+        let val = document.getElementById("announcementInput").value.trim();
+        saveState("kbttc_undian_announcement", val);
+        let statusEl = document.getElementById("announcementSavedStatus");
+        statusEl.innerText = val ? "✔ Pesanan disimpan!" : "✔ Ticker disembunyikan.";
         setTimeout(() => { statusEl.innerText = ""; }, 4000);
     }
 

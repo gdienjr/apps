@@ -229,7 +229,69 @@ li.eliminated{opacity:.5;text-decoration:line-through}
 @media(max-width:650px){
   .group-container{grid-template-columns:1fr}
   .bracket-box{padding:16px 12px}
+  .peserta-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
 }
+@media(min-width:651px) and (max-width:900px){
+  .peserta-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+
+/* Grid Senarai Peserta — 5 lajur */
+.peserta-grid{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:10px;
+}
+.peserta-card{
+  background:#fbfcff;
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:10px 8px;
+  font-size:13px;
+  font-weight:700;
+  text-align:center;
+  color:var(--ink);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:54px;
+  word-break:break-word;
+  line-height:1.35;
+}
+.peserta-num{
+  color:var(--primary);
+  font-weight:800;
+  margin-right:4px;
+}
+
+/* Ticker skrol — pesanan pengurus perlawanan */
+.ticker-wrap{
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:46px;
+  background:linear-gradient(90deg,var(--primary2),var(--primary));
+  color:#fff;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  box-shadow:0 -4px 14px rgba(0,0,0,.18);
+  z-index:50;
+}
+.ticker-track{
+  display:inline-block;
+  white-space:nowrap;
+  padding-left:100%;
+  font-weight:700;
+  font-size:15px;
+  letter-spacing:.02em;
+  animation:tickerScroll linear infinite;
+}
+@keyframes tickerScroll{
+  0%{transform:translateX(0);}
+  100%{transform:translateX(-100%);}
+}
+body.has-ticker{padding-bottom:66px;}
 </style>
 </head>
 <body>
@@ -249,20 +311,24 @@ li.eliminated{opacity:.5;text-decoration:line-through}
         <div id="pesertaArea"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="groupPanel" style="display:none;">
         <h2>🎲 Pecahan Kumpulan</h2>
-        <div id="groupArea"><div class="empty-msg">Belum ada undian kumpulan lagi.</div></div>
+        <div id="groupArea"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="slotPanel" style="display:none;">
         <h2>🏆 Penempatan Juara ke Suku Akhir</h2>
-        <div id="slotArea"><div class="empty-msg">Belum ada penempatan juara lagi.</div></div>
+        <div id="slotArea"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="bracketPanel" style="display:none;">
         <h2>📊 Carta Draw Sheet — Peringkat Kalah Mati</h2>
-        <div id="bracketArea"><div class="empty-msg">Belum ada carta pusingan 16 lagi.</div></div>
+        <div id="bracketArea"></div>
     </div>
+</div>
+
+<div class="ticker-wrap" id="tickerWrap" style="display:none;">
+    <div class="ticker-track" id="tickerTrack"></div>
 </div>
 
 
@@ -282,6 +348,7 @@ async function fetchState() {
             document.getElementById("sourceTxt").innerText = "🌐 Live dari Server";
             return {
                 title: data.kbttc_undian_title || "",
+                announcement: data.kbttc_undian_announcement || "",
                 peserta: data.kbttc_undian_peserta || [],
                 groups: data.kbttc_undian_groups || {},
                 ranks: data.kbttc_undian_ranks || {},
@@ -296,6 +363,7 @@ async function fetchState() {
     document.getElementById("sourceTxt").innerText = "📴 Guna simpanan tempatan (peranti ini sahaja)";
     return {
         title: JSON.parse(localStorage.getItem("kbttc_undian_title") || "\"\""),
+        announcement: JSON.parse(localStorage.getItem("kbttc_undian_announcement") || "\"\""),
         peserta: JSON.parse(localStorage.getItem("kbttc_undian_peserta") || "[]"),
         groups: JSON.parse(localStorage.getItem("kbttc_undian_groups") || "{}"),
         ranks: JSON.parse(localStorage.getItem("kbttc_undian_ranks") || "{}"),
@@ -472,21 +540,57 @@ function renderBracket(state) {
 
 function renderPeserta(peserta) {
     if (!peserta || !peserta.length) return null;
-    let html = `<p style="margin:0 0 10px;color:var(--muted);font-size:13px;">Jumlah peserta didaftarkan: <b>${peserta.length}</b></p><ol class="numbered-list">`;
+    let html = `<p style="margin:0 0 10px;color:var(--muted);font-size:13px;">Jumlah peserta didaftarkan: <b>${peserta.length}</b></p><div class="peserta-grid">`;
     peserta.forEach((p, i) => {
-        html += `<li><span class="pos-badge">${i + 1}</span>${escapeHtml(p)}</li>`;
+        html += `<div class="peserta-card"><span class="peserta-num">${i + 1}.</span>${escapeHtml(p)}</div>`;
     });
-    html += "</ol>";
+    html += "</div>";
     return html;
 }
 
+let lastTickerText = null;
+
+function updateTicker(text) {
+    let wrap = document.getElementById("tickerWrap");
+    let track = document.getElementById("tickerTrack");
+    let clean = (text || "").trim();
+
+    if (!clean) {
+        wrap.style.display = "none";
+        document.body.classList.remove("has-ticker");
+        lastTickerText = null;
+        return;
+    }
+
+    wrap.style.display = "flex";
+    document.body.classList.add("has-ticker");
+
+    // Elak "reset" animasi berulang setiap 6 saat (poll interval) kalau
+    // teks pesanan tidak berubah — hanya update DOM bila teks berlainan.
+    if (clean !== lastTickerText) {
+        track.innerText = clean;
+        // Kelajuan skrol disesuaikan ikut panjang teks supaya senang dibaca.
+        let duration = Math.max(12, clean.length * 0.22);
+        track.style.animationDuration = duration + "s";
+        lastTickerText = clean;
+    }
+}
+
 async function renderAll() {
-    let { title, peserta, groups, ranks, slotJuara, p16draw, matches } = await fetchState();
+    let { title, announcement, peserta, groups, ranks, slotJuara, p16draw, matches } = await fetchState();
 
     document.getElementById("mainTitle").innerText = (title && title.trim()) ? title : "🏓 Keputusan & Carta Kejohanan";
 
-    let pesertaPanel = document.getElementById("pesertaPanel");
+    updateTicker(announcement);
+
     let hasGroups = groups && Object.keys(groups).length > 0;
+    let hasSlot = slotJuara && Object.keys(slotJuara).length > 0;
+    let hasBracket = !!p16draw;
+
+    // Peserta panel hanya nampak SEBELUM undian kumpulan dijalankan —
+    // sebaik sahaja ada groups, senarai kumpulan yang lebih terperinci
+    // mengambil alih peranan ini.
+    let pesertaPanel = document.getElementById("pesertaPanel");
     if (peserta && peserta.length && !hasGroups) {
         pesertaPanel.style.display = "block";
         document.getElementById("pesertaArea").innerHTML = renderPeserta(peserta) || "<div class='empty-msg'>Tiada peserta didaftarkan.</div>";
@@ -494,17 +598,31 @@ async function renderAll() {
         pesertaPanel.style.display = "none";
     }
 
-    let groupHtml = renderGroups(groups, ranks);
-    document.getElementById("groupArea").innerHTML = groupHtml || "<div class='empty-msg'>Belum ada undian kumpulan lagi.</div>";
+    // Setiap panel peringkat seterusnya hanya didedahkan selepas admin
+    // tekan butang undian berkaitan di undi.html (iaitu bila data wujud).
+    let groupPanel = document.getElementById("groupPanel");
+    if (hasGroups) {
+        groupPanel.style.display = "block";
+        document.getElementById("groupArea").innerHTML = renderGroups(groups, ranks) || "";
+    } else {
+        groupPanel.style.display = "none";
+    }
 
-    let slotHtml = renderSlotJuara(slotJuara, groups, ranks);
-    document.getElementById("slotArea").innerHTML = slotHtml || "<div class='empty-msg'>Belum ada penempatan juara lagi.</div>";
+    let slotPanel = document.getElementById("slotPanel");
+    if (hasSlot) {
+        slotPanel.style.display = "block";
+        document.getElementById("slotArea").innerHTML = renderSlotJuara(slotJuara, groups, ranks) || "";
+    } else {
+        slotPanel.style.display = "none";
+    }
 
-    if (p16draw) {
+    let bracketPanel = document.getElementById("bracketPanel");
+    if (hasBracket) {
+        bracketPanel.style.display = "block";
         let state = computeBracketState(p16draw, groups, ranks, matches);
         document.getElementById("bracketArea").innerHTML = renderBracket(state);
     } else {
-        document.getElementById("bracketArea").innerHTML = "<div class='empty-msg'>Belum ada carta pusingan 16 lagi.</div>";
+        bracketPanel.style.display = "none";
     }
 
     document.getElementById("updatedTxt").innerText = "Dikemaskini: " + new Date().toLocaleTimeString("ms-MY");
