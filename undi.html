@@ -757,8 +757,8 @@ button.is-loading::before{display:none}
     <div class="stage no-print" id="modeStage">
         <h4>⚙️ Format Game</h4>
         <div class="mode-btn-row">
-            <button type="button" id="btnMode4" onclick="tukarMod('4')">4 Kumpulan (A, B, C, D)</button>
-            <button type="button" id="btnMode2" onclick="tukarMod('2')">2 Kumpulan (A, B)</button>
+            <button type="button" id="btnMode4" onclick="tukarMod('4')">4 GROUP (A, B, C, D)</button>
+            <button type="button" id="btnMode2" onclick="tukarMod('2')">2 GROUP (A, B)</button>
         </div>
         <div class="mode-status-txt" id="modeStatus"></div>
     </div>
@@ -824,7 +824,6 @@ button.is-loading::before{display:none}
     <!-- Peringkat (mod 2 Kumpulan): terus ke Suku Akhir, bersilang A/B -->
     <div class="stage" id="stage2modeQf">
         <h3>Jana Carta Suku Akhir (Silang Kumpulan A &amp; B)</h3>
-        <p>4 terbaik Kumpulan A dan 4 terbaik Kumpulan B disilangkan terus ke Suku Akhir (A1/B1 diasingkan supaya hanya boleh bertemu di Akhir).</p>
         <button id="btnQf2" onclick="janaSukuAkhir2Grp()">🔀 Jana Carta Suku Akhir (A vs B)</button>
         <div id="resultQf2" class="result-box" style="display:none;"></div>
     </div>
@@ -978,8 +977,8 @@ document.addEventListener("click", function(e){
         document.getElementById("btnMode4").classList.toggle("mode-active", tournamentMode === "4");
         document.getElementById("btnMode2").classList.toggle("mode-active", tournamentMode === "2");
         document.getElementById("modeStatus").innerText = tournamentMode === "4"
-            ? "Format semasa: 4 Kumpulan (A, B, C, D) — Juara terus ke Suku Akhir; Naib Juara & Tempat Ke-3 lawan Pusingan 16 dahulu."
-            : "Format semasa: 2 Kumpulan (A, B) — 4 terbaik setiap kumpulan terus ke Suku Akhir, bersilang antara A dan B.";
+            ? "Juara Group terus ke Suku Akhir; Naib Juara & Tempat Ke-3 lawan Pusingan 16."
+            : "4 terbaik setiap kumpulan terus ke Suku Akhir, bersilang antara A dan B.";
         document.getElementById("rankFormDesc").innerText = tournamentMode === "2"
             ? "Masukkan nombor kedudukan pair dalam senarai kumpulan untuk Tempat 1, 2, 3 DAN 4 (4 terbaik layak ke Suku Akhir)."
             : "Masukkan nombor kedudukan pair dalam senarai kumpulan (contoh: kalau nama ke-4 dalam list Kumpulan A menang tempat 1, taip 4).";
