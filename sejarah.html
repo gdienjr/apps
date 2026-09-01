@@ -152,6 +152,7 @@ ol.numbered-list li{
 li.medal-1 .pos-badge{background:#f5b63b}
 li.medal-2 .pos-badge{background:#9aa7b8}
 li.medal-3 .pos-badge{background:#c17a45}
+li.medal-4 .pos-badge{background:#5c8fd6}
 li.eliminated{opacity:.5;text-decoration:line-through}
 .medal-icon{font-size:14px}
 .q-list{list-style:none;padding:0;margin:0}
@@ -290,7 +291,7 @@ li.eliminated{opacity:.5;text-decoration:line-through}
             <div id="groupArea"></div>
         </div>
 
-        <div class="panel">
+        <div class="panel" id="slotPanel">
             <h2>🏆 Penempatan Juara ke Suku Akhir</h2>
             <div id="slotArea"></div>
         </div>
@@ -351,20 +352,33 @@ async function openHistory(id, label) {
             return;
         }
 
+        let mode = data.kbttc_undian_mode || "4";
         let groups = data.kbttc_undian_groups || {};
         let ranks = data.kbttc_undian_ranks || {};
         let slotJuara = data.kbttc_undian_slotjuara || {};
         let p16draw = data.kbttc_undian_p16 || null;
+        let qf2draw = data.kbttc_undian_qf2 || null;
         let matches = data.kbttc_undian_matches || {};
 
         document.getElementById("groupArea").innerHTML = renderGroups(groups, ranks) || "<div class='empty-msg'>Tiada data kumpulan.</div>";
-        document.getElementById("slotArea").innerHTML = renderSlotJuara(slotJuara, groups, ranks) || "<div class='empty-msg'>Tiada data penempatan juara.</div>";
 
-        if (p16draw) {
+        // Panel "Penempatan Juara ke Suku Akhir" cuma relevan untuk mod 4 Kumpulan.
+        let slotPanel = document.getElementById("slotPanel");
+        if (mode === "2") {
+            slotPanel.style.display = "none";
+        } else {
+            slotPanel.style.display = "block";
+            document.getElementById("slotArea").innerHTML = renderSlotJuara(slotJuara, groups, ranks) || "<div class='empty-msg'>Tiada data penempatan juara.</div>";
+        }
+
+        if (mode === "2" && qf2draw) {
+            let state = computeBracketState2(qf2draw, groups, ranks, matches);
+            document.getElementById("bracketArea").innerHTML = renderBracket2(state);
+        } else if (mode !== "2" && p16draw) {
             let state = computeBracketState(p16draw, groups, ranks, matches);
             document.getElementById("bracketArea").innerHTML = renderBracket(state);
         } else {
-            document.getElementById("bracketArea").innerHTML = "<div class='empty-msg'>Tiada carta pusingan 16 untuk rekod ini.</div>";
+            document.getElementById("bracketArea").innerHTML = "<div class='empty-msg'>Tiada carta draw sheet untuk rekod ini.</div>";
         }
     } catch (err) {
         document.getElementById("groupArea").innerHTML = "<div class='empty-msg'>Gagal muatkan rekod ini.</div>";
@@ -391,8 +405,8 @@ function rankName(g, pos, groups, ranks) {
         let idx = ranks[g][`p${pos}`] - 1;
         if (groups[g][idx]) return groups[g][idx];
     }
-    let labels = { 1: "Juara", 2: "Naib Juara", 3: "Tempat Ke-3" };
-    return `${labels[pos]} ${g}`;
+    let labels = { 1: "Juara", 2: "Naib Juara", 3: "Tempat Ke-3", 4: "Tempat Ke-4" };
+    return `${labels[pos] || ("Tempat Ke-" + pos)} ${g}`;
 }
 
 function renderGroups(groups, ranks) {
@@ -411,6 +425,7 @@ function renderGroups(groups, ranks) {
                 if (r.p1 === pos) { medalClass = "medal-1"; medalIcon = "🥇 "; }
                 else if (r.p2 === pos) { medalClass = "medal-2"; medalIcon = "🥈 "; }
                 else if (r.p3 === pos) { medalClass = "medal-3"; medalIcon = "🥉 "; }
+                else if (r.p4 === pos) { medalClass = "medal-4"; medalIcon = "4️⃣ "; }
                 else { elimClass = "eliminated"; }
             }
             html += `<li class="${medalClass} ${elimClass}"><span class="pos-badge">${pos}</span><span class="medal-icon">${medalIcon}</span>${escapeHtml(p)}</li>`;
@@ -471,6 +486,38 @@ function computeBracketState(p16draw, groups, ranks, matches) {
     return state;
 }
 
+// Mod 2 Kumpulan: Suku Akhir terus (silang A/B), tiada Pusingan 16.
+function computeBracketState2(qf2draw, groups, ranks, matches) {
+    let state = { qf: [], sf: [] };
+
+    qf2draw.pairs.forEach((pair, i) => {
+        let sideA = rankName(pair[0].g, pair[0].p, groups, ranks);
+        let sideB = rankName(pair[1].g, pair[1].p, groups, ranks);
+        let pick = matches[`qf-${i}`] || "";
+        let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+        state.qf.push({ sideA, sideB, pick, winnerName, enabled: true });
+    });
+
+    [[0, 1], [2, 3]].forEach((pair, si) => {
+        let depA = state.qf[pair[0]].winnerName;
+        let depB = state.qf[pair[1]].winnerName;
+        let sideA = depA || `Pemenang Suku Akhir ${pair[0] + 1}`;
+        let sideB = depB || `Pemenang Suku Akhir ${pair[1] + 1}`;
+        let pick = matches[`sf-${si}`] || "";
+        let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+        state.sf.push({ sideA, sideB, pick, winnerName, enabled: !!depA && !!depB });
+    });
+
+    let depA = state.sf[0].winnerName, depB = state.sf[1].winnerName;
+    let fSideA = depA || "Pemenang Separuh Akhir 1";
+    let fSideB = depB || "Pemenang Separuh Akhir 2";
+    let fPick = matches["final"] || "";
+    let fWinner = fPick === "A" ? fSideA : (fPick === "B" ? fSideB : null);
+    state.final = { sideA: fSideA, sideB: fSideB, pick: fPick, winnerName: fWinner, enabled: !!depA && !!depB };
+
+    return state;
+}
+
 function resultLine(m, side) {
     let name = side === "A" ? m.sideA : m.sideB;
     let cls = "result-line";
@@ -503,6 +550,64 @@ function renderBracket(state) {
             ${resultLine(state.r16[i], "B")}
             <div class="bracket-vs">▾ pemenang lawan ▾</div>
             <div class="bracket-mini-label">Suku Akhir (Q${i + 1})</div>
+            ${resultLine(state.qf[i], "A")}
+            ${resultLine(state.qf[i], "B")}
+        </div>`;
+    }
+    html += `</div></div>
+        <svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+            <path d="M12.5,0 L12.5,10 L25,20 L25,24"/>
+            <path d="M37.5,0 L37.5,10 L25,20"/>
+            <path d="M62.5,0 L62.5,10 L75,20 L75,24"/>
+            <path d="M87.5,0 L87.5,10 L75,20"/>
+        </svg>
+        <div class="bracket-stage">
+            <div class="bracket-stage-label">Separuh Akhir</div>
+            <div class="bracket-grid cols-2">
+                <div class="bracket-card">
+                    <div class="bracket-mini-label">Separuh Akhir 1</div>
+                    ${resultLine(state.sf[0], "A")}
+                    ${resultLine(state.sf[0], "B")}
+                </div>
+                <div class="bracket-card">
+                    <div class="bracket-mini-label">Separuh Akhir 2</div>
+                    ${resultLine(state.sf[1], "A")}
+                    ${resultLine(state.sf[1], "B")}
+                </div>
+            </div>
+        </div>
+        <svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+            <path d="M25,0 L25,10 L50,20 L50,24"/>
+            <path d="M75,0 L75,10 L50,20"/>
+        </svg>
+        <div class="bracket-stage">
+            <div class="bracket-stage-label">🏆 Akhir</div>
+            <div class="bracket-grid cols-1">
+                <div class="bracket-card final-card">
+                    <div class="bracket-mini-label">Perlawanan Akhir</div>
+                    ${resultLine(state.final, "A")}
+                    ${resultLine(state.final, "B")}
+                </div>
+            </div>
+        </div>
+    </div>`;
+    return html;
+}
+
+// Bracket 2 Kumpulan (read-only): tiada Pusingan 16, terus mula di Suku Akhir.
+function renderBracket2(state) {
+    let html = "";
+    if (state.final.winnerName) {
+        html += `<div class="champion-banner">🏆 JUARA KEJOHANAN: ${escapeHtml(state.final.winnerName)}</div>`;
+    }
+    html += `<div class="bracket-box">
+        <div class="bracket-heading">Suku Akhir (Silang A/B) ➜ Separuh Akhir ➜ Akhir</div>
+        <div class="bracket-stage">
+            <div class="bracket-stage-label">Suku Akhir</div>
+            <div class="bracket-grid">`;
+    for (let i = 0; i < 4; i++) {
+        html += `<div class="bracket-card">
+            <div class="bracket-mini-label">Suku Akhir ${i + 1}</div>
             ${resultLine(state.qf[i], "A")}
             ${resultLine(state.qf[i], "B")}
         </div>`;

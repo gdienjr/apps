@@ -118,6 +118,7 @@ ol.numbered-list li{
 li.medal-1 .pos-badge{background:#f5b63b}
 li.medal-2 .pos-badge{background:#9aa7b8}
 li.medal-3 .pos-badge{background:#c17a45}
+li.medal-4 .pos-badge{background:#5c8fd6}
 li.eliminated{opacity:.5;text-decoration:line-through}
 .medal-icon{font-size:14px}
 .q-list{list-style:none;padding:0;margin:0}
@@ -349,11 +350,13 @@ async function fetchState() {
             return {
                 title: data.kbttc_undian_title || "",
                 announcement: data.kbttc_undian_announcement || "",
+                mode: data.kbttc_undian_mode || "4",
                 peserta: data.kbttc_undian_peserta || [],
                 groups: data.kbttc_undian_groups || {},
                 ranks: data.kbttc_undian_ranks || {},
                 slotJuara: data.kbttc_undian_slotjuara || {},
                 p16draw: data.kbttc_undian_p16 || null,
+                qf2draw: data.kbttc_undian_qf2 || null,
                 matches: data.kbttc_undian_matches || {}
             };
         } catch (err) {
@@ -364,11 +367,13 @@ async function fetchState() {
     return {
         title: JSON.parse(localStorage.getItem("kbttc_undian_title") || "\"\""),
         announcement: JSON.parse(localStorage.getItem("kbttc_undian_announcement") || "\"\""),
+        mode: JSON.parse(localStorage.getItem("kbttc_undian_mode") || "\"4\""),
         peserta: JSON.parse(localStorage.getItem("kbttc_undian_peserta") || "[]"),
         groups: JSON.parse(localStorage.getItem("kbttc_undian_groups") || "{}"),
         ranks: JSON.parse(localStorage.getItem("kbttc_undian_ranks") || "{}"),
         slotJuara: JSON.parse(localStorage.getItem("kbttc_undian_slotjuara") || "{}"),
         p16draw: JSON.parse(localStorage.getItem("kbttc_undian_p16") || "null"),
+        qf2draw: JSON.parse(localStorage.getItem("kbttc_undian_qf2") || "null"),
         matches: JSON.parse(localStorage.getItem("kbttc_undian_matches") || "{}")
     };
 }
@@ -382,8 +387,8 @@ function rankName(g, pos, groups, ranks) {
         let idx = ranks[g][`p${pos}`] - 1;
         if (groups[g][idx]) return groups[g][idx];
     }
-    let labels = { 1: "Juara", 2: "Naib Juara", 3: "Tempat Ke-3" };
-    return `${labels[pos]} ${g}`;
+    let labels = { 1: "Juara", 2: "Naib Juara", 3: "Tempat Ke-3", 4: "Tempat Ke-4" };
+    return `${labels[pos] || ("Tempat Ke-" + pos)} ${g}`;
 }
 
 function renderGroups(groups, ranks) {
@@ -402,6 +407,7 @@ function renderGroups(groups, ranks) {
                 if (r.p1 === pos) { medalClass = "medal-1"; medalIcon = "🥇 "; }
                 else if (r.p2 === pos) { medalClass = "medal-2"; medalIcon = "🥈 "; }
                 else if (r.p3 === pos) { medalClass = "medal-3"; medalIcon = "🥉 "; }
+                else if (r.p4 === pos) { medalClass = "medal-4"; medalIcon = "4️⃣ "; }
                 else { elimClass = "eliminated"; }
             }
             html += `<li class="${medalClass} ${elimClass}"><span class="pos-badge">${pos}</span><span class="medal-icon">${medalIcon}</span>${escapeHtml(p)}</li>`;
@@ -452,6 +458,38 @@ function computeBracketState(p16draw, groups, ranks, matches) {
         let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
         state.sf.push({ sideA, sideB, pick, winnerName, enabled: !!depA && !!depB });
     });
+    let depA = state.sf[0].winnerName, depB = state.sf[1].winnerName;
+    let fSideA = depA || "Pemenang Separuh Akhir 1";
+    let fSideB = depB || "Pemenang Separuh Akhir 2";
+    let fPick = matches["final"] || "";
+    let fWinner = fPick === "A" ? fSideA : (fPick === "B" ? fSideB : null);
+    state.final = { sideA: fSideA, sideB: fSideB, pick: fPick, winnerName: fWinner, enabled: !!depA && !!depB };
+
+    return state;
+}
+
+// Mod 2 Kumpulan: Suku Akhir terus (silang A/B), tiada Pusingan 16.
+function computeBracketState2(qf2draw, groups, ranks, matches) {
+    let state = { qf: [], sf: [] };
+
+    qf2draw.pairs.forEach((pair, i) => {
+        let sideA = rankName(pair[0].g, pair[0].p, groups, ranks);
+        let sideB = rankName(pair[1].g, pair[1].p, groups, ranks);
+        let pick = matches[`qf-${i}`] || "";
+        let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+        state.qf.push({ sideA, sideB, pick, winnerName, enabled: true });
+    });
+
+    [[0, 1], [2, 3]].forEach((pair, si) => {
+        let depA = state.qf[pair[0]].winnerName;
+        let depB = state.qf[pair[1]].winnerName;
+        let sideA = depA || `Pemenang Suku Akhir ${pair[0] + 1}`;
+        let sideB = depB || `Pemenang Suku Akhir ${pair[1] + 1}`;
+        let pick = matches[`sf-${si}`] || "";
+        let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+        state.sf.push({ sideA, sideB, pick, winnerName, enabled: !!depA && !!depB });
+    });
+
     let depA = state.sf[0].winnerName, depB = state.sf[1].winnerName;
     let fSideA = depA || "Pemenang Separuh Akhir 1";
     let fSideB = depB || "Pemenang Separuh Akhir 2";
@@ -538,6 +576,64 @@ function renderBracket(state) {
     return html;
 }
 
+// Bracket 2 Kumpulan (read-only): tiada Pusingan 16, terus mula di Suku Akhir.
+function renderBracket2(state) {
+    let html = "";
+    if (state.final.winnerName) {
+        html += `<div class="champion-banner">🏆 JUARA KEJOHANAN: ${escapeHtml(state.final.winnerName)}</div>`;
+    }
+    html += `<div class="bracket-box">
+        <div class="bracket-heading">Suku Akhir (Silang A/B) ➜ Separuh Akhir ➜ Akhir</div>
+        <div class="bracket-stage">
+            <div class="bracket-stage-label">Suku Akhir</div>
+            <div class="bracket-grid">`;
+    for (let i = 0; i < 4; i++) {
+        html += `<div class="bracket-card">
+            <div class="bracket-mini-label">Suku Akhir ${i + 1}</div>
+            ${resultLine(state.qf[i], "A")}
+            ${resultLine(state.qf[i], "B")}
+        </div>`;
+    }
+    html += `</div></div>
+        <svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+            <path d="M12.5,0 L12.5,10 L25,20 L25,24"/>
+            <path d="M37.5,0 L37.5,10 L25,20"/>
+            <path d="M62.5,0 L62.5,10 L75,20 L75,24"/>
+            <path d="M87.5,0 L87.5,10 L75,20"/>
+        </svg>
+        <div class="bracket-stage">
+            <div class="bracket-stage-label">Separuh Akhir</div>
+            <div class="bracket-grid cols-2">
+                <div class="bracket-card">
+                    <div class="bracket-mini-label">Separuh Akhir 1</div>
+                    ${resultLine(state.sf[0], "A")}
+                    ${resultLine(state.sf[0], "B")}
+                </div>
+                <div class="bracket-card">
+                    <div class="bracket-mini-label">Separuh Akhir 2</div>
+                    ${resultLine(state.sf[1], "A")}
+                    ${resultLine(state.sf[1], "B")}
+                </div>
+            </div>
+        </div>
+        <svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
+            <path d="M25,0 L25,10 L50,20 L50,24"/>
+            <path d="M75,0 L75,10 L50,20"/>
+        </svg>
+        <div class="bracket-stage">
+            <div class="bracket-stage-label">🏆 Akhir</div>
+            <div class="bracket-grid cols-1">
+                <div class="bracket-card final-card">
+                    <div class="bracket-mini-label">Perlawanan Akhir</div>
+                    ${resultLine(state.final, "A")}
+                    ${resultLine(state.final, "B")}
+                </div>
+            </div>
+        </div>
+    </div>`;
+    return html;
+}
+
 function renderPeserta(peserta) {
     if (!peserta || !peserta.length) return null;
     let html = `<p style="margin:0 0 10px;color:var(--muted);font-size:13px;">Jumlah peserta didaftarkan: <b>${peserta.length}</b></p><div class="peserta-grid">`;
@@ -577,15 +673,16 @@ function updateTicker(text) {
 }
 
 async function renderAll() {
-    let { title, announcement, peserta, groups, ranks, slotJuara, p16draw, matches } = await fetchState();
+    let { title, announcement, mode, peserta, groups, ranks, slotJuara, p16draw, qf2draw, matches } = await fetchState();
 
     document.getElementById("mainTitle").innerText = (title && title.trim()) ? title : "🏓 Keputusan & Carta Kejohanan";
 
     updateTicker(announcement);
 
     let hasGroups = groups && Object.keys(groups).length > 0;
-    let hasSlot = slotJuara && Object.keys(slotJuara).length > 0;
-    let hasBracket = !!p16draw;
+    let hasSlot = mode !== "2" && slotJuara && Object.keys(slotJuara).length > 0;
+    let hasBracket4 = mode !== "2" && !!p16draw;
+    let hasBracket2 = mode === "2" && !!qf2draw;
 
     // Peserta panel hanya nampak SEBELUM undian kumpulan dijalankan —
     // sebaik sahaja ada groups, senarai kumpulan yang lebih terperinci
@@ -608,6 +705,7 @@ async function renderAll() {
         groupPanel.style.display = "none";
     }
 
+    // Panel "Penempatan Juara ke Suku Akhir" cuma relevan untuk mod 4 Kumpulan.
     let slotPanel = document.getElementById("slotPanel");
     if (hasSlot) {
         slotPanel.style.display = "block";
@@ -617,10 +715,14 @@ async function renderAll() {
     }
 
     let bracketPanel = document.getElementById("bracketPanel");
-    if (hasBracket) {
+    if (hasBracket4) {
         bracketPanel.style.display = "block";
         let state = computeBracketState(p16draw, groups, ranks, matches);
         document.getElementById("bracketArea").innerHTML = renderBracket(state);
+    } else if (hasBracket2) {
+        bracketPanel.style.display = "block";
+        let state = computeBracketState2(qf2draw, groups, ranks, matches);
+        document.getElementById("bracketArea").innerHTML = renderBracket2(state);
     } else {
         bracketPanel.style.display = "none";
     }
