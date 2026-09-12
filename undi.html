@@ -480,7 +480,7 @@ table.score-table th.no-col{
   text-align:center;
   font-size:11px;
   color:#333;
-  margin-top:10px;
+  margin-top:26px;
 }
 .tree-wrap{position:relative;margin:0 auto}
 .tree-col-label{
@@ -1923,7 +1923,7 @@ document.addEventListener("click", function(e){
             <h4>${escapeHtml(currentTournamentTitle())}</h4>
             <div class="draw-sheet-sub">Carta Draw Sheet — Peringkat Kalah Mati (4 Kumpulan)</div>
             ${renderTreeMatchesPrintHTML(true, state)}
-            <div class="draw-sheet-footer">📺 Keputusan &amp; carta LIVE boleh diikuti di : ${escapeHtml(paparUrl())}</div>
+            <div class="draw-sheet-footer">📺 Keputusan &amp; carta live: ${escapeHtml(paparUrl())}</div>
         </div>`;
     }
 
@@ -1932,7 +1932,7 @@ document.addEventListener("click", function(e){
             <h4>${escapeHtml(currentTournamentTitle())}</h4>
             <div class="draw-sheet-sub">Carta Draw Sheet — Suku Akhir (Silang A/B) ➜ Separuh Akhir ➜ Akhir</div>
             ${renderTreeMatchesPrintHTML(false, state)}
-            <div class="draw-sheet-footer">📺 Keputusan &amp; carta LIVE boleh diikuti di: ${escapeHtml(paparUrl())}</div>
+            <div class="draw-sheet-footer">📺 Keputusan &amp; carta live: ${escapeHtml(paparUrl())}</div>
         </div>`;
     }
 
