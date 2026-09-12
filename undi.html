@@ -451,28 +451,28 @@ table.score-table th.no-col{
   background:#fff;
   border:2px solid #222;
   border-radius:6px;
-  padding:10px 16px;
+  padding:8px 14px;
   margin-bottom:22px;
   box-sizing:border-box;
 }
 .draw-sheet-page h4{
-  margin:0 0 2px;
-  font-size:18px;
+  margin:0 0 1px;
+  font-size:16px;
   font-weight:700;
   color:#111;
   text-align:center;
 }
 .draw-sheet-sub{
   text-align:center;
-  font-size:10.5px;
+  font-size:10px;
   color:#555;
-  margin:0 0 8px;
+  margin:0 0 6px;
 }
 .tree-wrap{position:relative;margin:0 auto}
 .tree-col-label{
   position:absolute;
   top:0;
-  font-size:11.5px;
+  font-size:11px;
   font-weight:800;
   color:#444;
   text-transform:uppercase;
@@ -480,13 +480,13 @@ table.score-table th.no-col{
 }
 .tree-box{
   position:absolute;
-  width:150px;
-  height:38px;
-  padding:0 9px;
-  border:1.5px solid #333;
+  width:145px;
+  height:32px;
+  padding:0 8px;
+  border:1.4px solid #333;
   border-radius:6px;
   background:#fff;
-  font-size:12.5px;
+  font-size:12px;
   font-weight:600;
   color:#111;
   display:flex;
@@ -1808,7 +1808,7 @@ document.addEventListener("click", function(e){
     }
 
     function renderTreeMatchesPrintHTML(hasR16, state) {
-        let RU = 70, BOX_W = 150, BOX_H = 38, COL_GAP = 34, OFF_Y = 24;
+        let RU = 60, BOX_W = 145, BOX_H = 32, COL_GAP = 30, OFF_Y = 20;
         let cols = hasR16 ? ["r16", "qf", "sf", "final", "juara"] : ["qf", "sf", "final", "juara"];
         let labels = hasR16
             ? { r16: "Pusingan 16", qf: "Suku akhir", sf: "Separuh akhir", final: "Akhir", juara: "Juara" }
