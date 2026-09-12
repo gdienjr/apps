@@ -399,7 +399,7 @@ table.score-table th.no-col{
      manual dalam dialog cetak (macam kebiasaan orang buat), kandungan
      jadi berputar DUA KALI (sekali oleh browser, sekali oleh CSS),
      menyebabkan teks/jadual nampak condong/tepi dalam pratonton cetak. */
-  @page{ size: landscape; margin: 10mm; }
+  @page{ size: A4 landscape; margin: 10mm; }
 
   /* PENTING: guna display:none (bukan visibility:hidden) untuk sembunyikan
      semua bahagian lain container semasa cetak. visibility:hidden cuma
@@ -462,13 +462,13 @@ table.score-table th.no-col{
 }
 .tree-box{
   position:absolute;
-  width:170px;
-  height:50px;
+  width:160px;
+  height:44px;
   padding:0 10px;
   border:1.6px solid #333;
   border-radius:7px;
   background:#fff;
-  font-size:14.5px;
+  font-size:14px;
   font-weight:600;
   color:#111;
   display:flex;
@@ -1790,7 +1790,7 @@ document.addEventListener("click", function(e){
     }
 
     function renderTreeMatchesPrintHTML(hasR16, state) {
-        let RU = 90, BOX_W = 170, BOX_H = 50, COL_GAP = 46, OFF_Y = 32;
+        let RU = 80, BOX_W = 160, BOX_H = 44, COL_GAP = 40, OFF_Y = 30;
         let cols = hasR16 ? ["r16", "qf", "sf", "final", "juara"] : ["qf", "sf", "final", "juara"];
         let labels = hasR16
             ? { r16: "Pusingan 16", qf: "Suku akhir", sf: "Separuh akhir", final: "Akhir", juara: "Juara" }
