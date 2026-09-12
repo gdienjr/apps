@@ -449,9 +449,8 @@ table.score-table th.no-col{
 /* Carta Draw Sheet — versi cetak (hitam/putih, jimat toner) */
 .draw-sheet-page{
   background:#fff;
-  border:2px solid #222;
-  border-radius:6px;
-  padding:8px 14px;
+  border:none;
+  padding:6px 10px;
   margin-bottom:22px;
   box-sizing:border-box;
 }
@@ -480,13 +479,13 @@ table.score-table th.no-col{
 }
 .tree-box{
   position:absolute;
-  width:145px;
-  height:32px;
-  padding:0 8px;
-  border:1.4px solid #333;
-  border-radius:6px;
+  width:135px;
+  height:28px;
+  padding:0 7px;
+  border:1.3px solid #333;
+  border-radius:5px;
   background:#fff;
-  font-size:12px;
+  font-size:11px;
   font-weight:600;
   color:#111;
   display:flex;
@@ -1808,7 +1807,7 @@ document.addEventListener("click", function(e){
     }
 
     function renderTreeMatchesPrintHTML(hasR16, state) {
-        let RU = 60, BOX_W = 145, BOX_H = 32, COL_GAP = 30, OFF_Y = 20;
+        let RU = 52, BOX_W = 135, BOX_H = 28, COL_GAP = 26, OFF_Y = 16;
         let cols = hasR16 ? ["r16", "qf", "sf", "final", "juara"] : ["qf", "sf", "final", "juara"];
         let labels = hasR16
             ? { r16: "Pusingan 16", qf: "Suku akhir", sf: "Separuh akhir", final: "Akhir", juara: "Juara" }
