@@ -400,9 +400,21 @@ table.score-table th.no-col{
      jadi berputar DUA KALI (sekali oleh browser, sekali oleh CSS),
      menyebabkan teks/jadual nampak condong/tepi dalam pratonton cetak. */
   @page{ size: landscape; margin: 10mm; }
-  body *{visibility:hidden}
-  #printArea, #printArea *{visibility:visible}
-  #printArea{position:absolute;top:0;left:0;width:100%}
+
+  /* PENTING: guna display:none (bukan visibility:hidden) untuk sembunyikan
+     semua bahagian lain container semasa cetak. visibility:hidden cuma
+     buat elemen tak kelihatan tapi RUANG SUSUN ATURNYA (layout height)
+     tetap dikira oleh browser -- jadi walaupun tak nampak, borang/textarea/
+     senarai kumpulan/carta interaktif yang panjang tetap "makan" ketinggian
+     dokumen, menyebabkan cetakan terbahagi kepada banyak muka surat KOSONG
+     (contoh: "6 sheets of paper" walhal kandungan sebenar cuma muat 1 muka
+     surat). display:none betul-betul keluarkan elemen dari susun atur,
+     jadi ketinggian dokumen semasa cetak = ketinggian #printArea sahaja.
+     #printArea diletak sebagai anak TERUS .container supaya selector ni
+     senang kekalkan ia sahaja yang kekal dipaparkan. */
+  .container > *{display:none !important}
+  .container > #printArea{display:block !important}
+  #printArea{position:static;width:100%}
   .score-sheet-page{
     border:2px solid #000;
     box-shadow:none;
@@ -442,7 +454,7 @@ table.score-table th.no-col{
 .tree-col-label{
   position:absolute;
   top:0;
-  font-size:10.5px;
+  font-size:13px;
   font-weight:800;
   color:#444;
   text-transform:uppercase;
@@ -451,12 +463,12 @@ table.score-table th.no-col{
 .tree-box{
   position:absolute;
   width:170px;
-  height:30px;
-  padding:0 9px;
-  border:1.3px solid #333;
-  border-radius:6px;
+  height:50px;
+  padding:0 10px;
+  border:1.6px solid #333;
+  border-radius:7px;
   background:#fff;
-  font-size:12px;
+  font-size:14.5px;
   font-weight:600;
   color:#111;
   display:flex;
@@ -856,7 +868,6 @@ button.is-loading::before{display:none}
         <div id="scoreBtnWrap" class="score-btn-row no-print" style="display:none;">
             <button id="btnCetak" onclick="cetakJadualMarkah()">🖨️ Papar & Cetak Jadual Markah Kumpulan</button>
         </div>
-        <div id="printArea"></div>
 
         <div id="rankFormWrap" class="rank-form-wrap" style="display:none;">
             <b>🏅 Rekod Keputusan Kumpulan</b>
@@ -894,6 +905,19 @@ button.is-loading::before{display:none}
         <p>Cetak carta peringkat kalah mati (Pusingan 16/Suku Akhir hingga Akhir) dalam bentuk kotak hitam/putih — untuk pengadil isi markah &amp; tandakan pemenang secara tangan di gelanggang.</p>
         <button id="btnCetakDraw" onclick="cetakDrawSheet()">🖨️ Papar &amp; Cetak Carta Draw Sheet</button>
     </div>
+
+    <!-- PENTING: printArea diletak sebagai anak TERUS .container (bukan
+         bersarang dalam mana-mana .stage) supaya semasa cetak, CSS boleh
+         sembunyikan (display:none) SEMUA stage lain dengan mudah tanpa
+         printArea turut disembunyikan sekali. Sebelum ni printArea
+         bersarang dalam .stage pertama — walaupun cuma "visibility:hidden"
+         dikenakan pada stage lain (bukan display:none), stage-stage tu
+         (borang, textarea, senarai kumpulan, dsb.) tetap makan ruang
+         SUSUN ATUR (layout height) walau tak kelihatan, jadi browser
+         anggap dokumen sangat panjang & bahagikan cetakan kepada banyak
+         muka surat kosong (contoh: "6 sheets of paper" walhal kandungan
+         sebenar cuma muat 1 muka surat). -->
+    <div id="printArea"></div>
 </div>
 
 
@@ -1766,7 +1790,7 @@ document.addEventListener("click", function(e){
     }
 
     function renderTreeMatchesPrintHTML(hasR16, state) {
-        let RU = 40, BOX_W = 170, BOX_H = 30, COL_GAP = 50, OFF_Y = 26;
+        let RU = 90, BOX_W = 170, BOX_H = 50, COL_GAP = 46, OFF_Y = 32;
         let cols = hasR16 ? ["r16", "qf", "sf", "final", "juara"] : ["qf", "sf", "final", "juara"];
         let labels = hasR16
             ? { r16: "Pusingan 16", qf: "Suku akhir", sf: "Separuh akhir", final: "Akhir", juara: "Juara" }
