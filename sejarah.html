@@ -261,6 +261,39 @@ li.eliminated{opacity:.5;text-decoration:line-through}
   text-align:center;
   margin-bottom:18px;
 }
+.tree-scroll{overflow-x:auto;padding-bottom:6px}
+.tree-wrap{position:relative;margin:0 auto}
+.tree-col-label{
+  position:absolute;
+  top:0;
+  font-size:11.5px;
+  font-weight:800;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.tree-box{
+  position:absolute;
+  width:190px;
+  height:32px;
+  padding:0 10px;
+  border:1.4px solid var(--border);
+  border-radius:7px;
+  background:#fff;
+  font-size:12.5px;
+  font-weight:600;
+  color:var(--ink);
+  display:flex;
+  align-items:center;
+  box-sizing:border-box;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.tree-box.pending{border-style:dashed;color:var(--muted);font-weight:500;background:#fbfcff}
+.tree-box.winner{border-color:var(--success);background:rgba(11,159,110,.08);color:var(--success);font-weight:800}
+.tree-box.loser{opacity:.45;text-decoration:line-through}
+.tree-svg .tree-line{fill:none;stroke:var(--border);stroke-width:1.4px}
 @media(max-width:650px){
   .group-container{grid-template-columns:1fr}
   .bracket-box{padding:16px 12px}
@@ -533,123 +566,103 @@ function resultLine(m, side) {
     return `<div class="${cls}">${escapeHtml(name)} ${check}</div>`;
 }
 
-function renderBracket(state) {
-    let html = "";
-    if (state.final.winnerName) {
-        html += `<div class="champion-banner">🏆 JUARA KEJOHANAN: ${escapeHtml(state.final.winnerName)}</div>`;
+function renderTreeMatchesHTML(hasR16, state) {
+    let RU = 42, BOX_W = 190, BOX_H = 32, COL_GAP = 60, OFF_Y = 28;
+    let cols = hasR16 ? ["r16", "qf", "sf", "final"] : ["qf", "sf", "final"];
+    let labels = hasR16
+        ? { r16: "Pusingan 16", qf: "Suku akhir", sf: "Separuh akhir", final: "Akhir" }
+        : { qf: "Suku akhir", sf: "Separuh akhir", final: "Akhir" };
+    let colX = {};
+    cols.forEach((c, i) => colX[c] = i * (BOX_W + COL_GAP));
+
+    let r16Y, qfA, qfB;
+    if (hasR16) {
+        r16Y = [0, 1, 2, 3, 4, 5, 6, 7].map(i => i * RU);
+        let r16Out = [0, 1, 2, 3].map(m => (r16Y[2 * m] + r16Y[2 * m + 1]) / 2);
+        qfA = r16Out;
+        qfB = r16Out.map(y => y + RU);
+    } else {
+        qfA = [0, 1, 2, 3].map(m => 2 * m * RU);
+        qfB = [0, 1, 2, 3].map(m => (2 * m + 1) * RU);
     }
-    html += `<div class="bracket-box">
-        <div class="bracket-heading">Pusingan 16 ➜ Suku Akhir ➜ Separuh Akhir ➜ Akhir</div>
-        <div class="bracket-stage">
-            <div class="bracket-stage-label">Pusingan 16 ➜ Suku Akhir</div>
-            <div class="bracket-grid">`;
-    for (let i = 0; i < 4; i++) {
-        html += `<div class="bracket-card">
-            <div class="bracket-mini-label">Pusingan 16</div>
-            ${resultLine(state.r16[i], "A")}
-            ${resultLine(state.r16[i], "B")}
-            <div class="bracket-vs">▾ pemenang lawan ▾</div>
-            <div class="bracket-mini-label">Suku Akhir (Q${i + 1})</div>
-            ${resultLine(state.qf[i], "A")}
-            ${resultLine(state.qf[i], "B")}
-        </div>`;
+    let qfOut = [0, 1, 2, 3].map(m => (qfA[m] + qfB[m]) / 2);
+    let sfA = [qfOut[0], qfOut[2]];
+    let sfB = [qfOut[1], qfOut[3]];
+    let sfOut = [(sfA[0] + sfB[0]) / 2, (sfA[1] + sfB[1]) / 2];
+    let finalA = sfOut[0], finalB = sfOut[1];
+
+    let allY = (hasR16 ? r16Y : qfA.concat(qfB)).concat([finalA, finalB]);
+    let maxY = Math.max(...allY);
+    let totalW = cols.length * BOX_W + (cols.length - 1) * COL_GAP;
+    let totalH = maxY + OFF_Y + BOX_H;
+
+    let boxesHtml = "";
+    let linesSvg = "";
+
+    function slotCls(m, side) {
+        if (!m.enabled) return "pending";
+        if (m.pick === side) return "winner";
+        if (m.pick && m.pick !== side) return "loser";
+        return "";
     }
-    html += `</div></div>
-        <svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
-            <path d="M12.5,0 L12.5,10 L25,20 L25,24"/>
-            <path d="M37.5,0 L37.5,10 L25,20"/>
-            <path d="M62.5,0 L62.5,10 L75,20 L75,24"/>
-            <path d="M87.5,0 L87.5,10 L75,20"/>
-        </svg>
-        <div class="bracket-stage">
-            <div class="bracket-stage-label">Separuh Akhir</div>
-            <div class="bracket-grid cols-2">
-                <div class="bracket-card">
-                    <div class="bracket-mini-label">Separuh Akhir 1</div>
-                    ${resultLine(state.sf[0], "A")}
-                    ${resultLine(state.sf[0], "B")}
-                </div>
-                <div class="bracket-card">
-                    <div class="bracket-mini-label">Separuh Akhir 2</div>
-                    ${resultLine(state.sf[1], "A")}
-                    ${resultLine(state.sf[1], "B")}
-                </div>
-            </div>
-        </div>
-        <svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
-            <path d="M25,0 L25,10 L50,20 L50,24"/>
-            <path d="M75,0 L75,10 L50,20"/>
-        </svg>
-        <div class="bracket-stage">
-            <div class="bracket-stage-label">🏆 Akhir</div>
-            <div class="bracket-grid cols-1">
-                <div class="bracket-card final-card">
-                    <div class="bracket-mini-label">Perlawanan Akhir</div>
-                    ${resultLine(state.final, "A")}
-                    ${resultLine(state.final, "B")}
-                </div>
-            </div>
-        </div>
-    </div>`;
-    return html;
+    function addBox(col, y, text, cls) {
+        boxesHtml += `<div class="tree-box ${cls}" style="left:${colX[col]}px;top:${y + OFF_Y - BOX_H / 2}px" title="${escapeHtml(text)}">${escapeHtml(text)}</div>`;
+    }
+    function mergeAndConnect(colFrom, colTo, yA, yB, yOut, toY) {
+        let x1 = colX[colFrom] + BOX_W;
+        let xBar = x1 + COL_GAP / 2;
+        let x2 = colX[colTo];
+        let a = yA + OFF_Y, b = yB + OFF_Y, o = yOut + OFF_Y, t = toY + OFF_Y;
+        linesSvg += `<path class="tree-line" d="M${x1},${a} H${xBar}"/>`;
+        linesSvg += `<path class="tree-line" d="M${x1},${b} H${xBar}"/>`;
+        linesSvg += `<path class="tree-line" d="M${xBar},${a} V${b}"/>`;
+        linesSvg += `<path class="tree-line" d="M${xBar},${o} H${x2}"/>`;
+    }
+
+    if (hasR16) {
+        for (let m = 0; m < 4; m++) {
+            addBox("r16", r16Y[2 * m], state.r16[m].sideA, slotCls(state.r16[m], "A"));
+            addBox("r16", r16Y[2 * m + 1], state.r16[m].sideB, slotCls(state.r16[m], "B"));
+            let out = (r16Y[2 * m] + r16Y[2 * m + 1]) / 2;
+            mergeAndConnect("r16", "qf", r16Y[2 * m], r16Y[2 * m + 1], out, qfA[m]);
+        }
+    }
+    for (let m = 0; m < 4; m++) {
+        addBox("qf", qfA[m], state.qf[m].sideA, slotCls(state.qf[m], "A"));
+        addBox("qf", qfB[m], state.qf[m].sideB, slotCls(state.qf[m], "B"));
+    }
+    for (let m = 0; m < 4; m++) {
+        let s = Math.floor(m / 2);
+        let toY = (m % 2 === 0) ? sfA[s] : sfB[s];
+        mergeAndConnect("qf", "sf", qfA[m], qfB[m], qfOut[m], toY);
+    }
+    for (let s = 0; s < 2; s++) {
+        addBox("sf", sfA[s], state.sf[s].sideA, slotCls(state.sf[s], "A"));
+        addBox("sf", sfB[s], state.sf[s].sideB, slotCls(state.sf[s], "B"));
+        let toY = (s === 0) ? finalA : finalB;
+        mergeAndConnect("sf", "final", sfA[s], sfB[s], sfOut[s], toY);
+    }
+    addBox("final", finalA, state.final.sideA, slotCls(state.final, "A"));
+    addBox("final", finalB, state.final.sideB, slotCls(state.final, "B"));
+
+    let labelsHtml = cols.map(c => `<div class="tree-col-label" style="left:${colX[c]}px;width:${BOX_W}px;text-align:center">${labels[c]}</div>`).join("");
+    let champHtml = state.final.winnerName
+        ? `<div class="champion-banner">🏆 JUARA KEJOHANAN: ${escapeHtml(state.final.winnerName)}</div>`
+        : "";
+
+    return `${champHtml}<div class="tree-scroll"><div class="tree-wrap" style="width:${totalW}px;height:${totalH}px">
+        ${labelsHtml}
+        <svg class="tree-svg" width="${totalW}" height="${totalH}" style="position:absolute;top:0;left:0">${linesSvg}</svg>
+        ${boxesHtml}
+    </div></div>`;
 }
 
-// Bracket 2 Kumpulan (read-only): tiada Pusingan 16, terus mula di Suku Akhir.
+function renderBracket(state) {
+    return renderTreeMatchesHTML(true, state);
+}
+
 function renderBracket2(state) {
-    let html = "";
-    if (state.final.winnerName) {
-        html += `<div class="champion-banner">🏆 JUARA KEJOHANAN: ${escapeHtml(state.final.winnerName)}</div>`;
-    }
-    html += `<div class="bracket-box">
-        <div class="bracket-heading">Suku Akhir (Silang A/B) ➜ Separuh Akhir ➜ Akhir</div>
-        <div class="bracket-stage">
-            <div class="bracket-stage-label">Suku Akhir</div>
-            <div class="bracket-grid">`;
-    for (let i = 0; i < 4; i++) {
-        html += `<div class="bracket-card">
-            <div class="bracket-mini-label">Suku Akhir ${i + 1}</div>
-            ${resultLine(state.qf[i], "A")}
-            ${resultLine(state.qf[i], "B")}
-        </div>`;
-    }
-    html += `</div></div>
-        <svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
-            <path d="M12.5,0 L12.5,10 L25,20 L25,24"/>
-            <path d="M37.5,0 L37.5,10 L25,20"/>
-            <path d="M62.5,0 L62.5,10 L75,20 L75,24"/>
-            <path d="M87.5,0 L87.5,10 L75,20"/>
-        </svg>
-        <div class="bracket-stage">
-            <div class="bracket-stage-label">Separuh Akhir</div>
-            <div class="bracket-grid cols-2">
-                <div class="bracket-card">
-                    <div class="bracket-mini-label">Separuh Akhir 1</div>
-                    ${resultLine(state.sf[0], "A")}
-                    ${resultLine(state.sf[0], "B")}
-                </div>
-                <div class="bracket-card">
-                    <div class="bracket-mini-label">Separuh Akhir 2</div>
-                    ${resultLine(state.sf[1], "A")}
-                    ${resultLine(state.sf[1], "B")}
-                </div>
-            </div>
-        </div>
-        <svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">
-            <path d="M25,0 L25,10 L50,20 L50,24"/>
-            <path d="M75,0 L75,10 L50,20"/>
-        </svg>
-        <div class="bracket-stage">
-            <div class="bracket-stage-label">🏆 Akhir</div>
-            <div class="bracket-grid cols-1">
-                <div class="bracket-card final-card">
-                    <div class="bracket-mini-label">Perlawanan Akhir</div>
-                    ${resultLine(state.final, "A")}
-                    ${resultLine(state.final, "B")}
-                </div>
-            </div>
-        </div>
-    </div>`;
-    return html;
+    return renderTreeMatchesHTML(false, state);
 }
 
 loadHistoryList();

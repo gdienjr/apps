@@ -416,6 +416,66 @@ table.score-table th.no-col{
   .score-sheet-page:last-child{page-break-after:auto}
 }
 
+/* Carta Draw Sheet — versi cetak (hitam/putih, jimat toner) */
+.draw-sheet-page{
+  background:#fff;
+  border:2px solid #222;
+  border-radius:6px;
+  padding:16px 18px;
+  margin-bottom:22px;
+  box-sizing:border-box;
+}
+.draw-sheet-page h4{
+  margin:0 0 4px;
+  font-size:22px;
+  font-weight:700;
+  color:#111;
+  text-align:center;
+}
+.draw-sheet-sub{
+  text-align:center;
+  font-size:11.5px;
+  color:#555;
+  margin:0 0 14px;
+}
+.tree-wrap{position:relative;margin:0 auto}
+.tree-col-label{
+  position:absolute;
+  top:0;
+  font-size:10.5px;
+  font-weight:800;
+  color:#444;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.tree-box{
+  position:absolute;
+  width:170px;
+  height:30px;
+  padding:0 9px;
+  border:1.3px solid #333;
+  border-radius:6px;
+  background:#fff;
+  font-size:12px;
+  font-weight:600;
+  color:#111;
+  display:flex;
+  align-items:center;
+  box-sizing:border-box;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.tree-box.blank{border-style:dashed;background:#fff}
+.tree-box.pending{border-style:dashed;color:#777;font-weight:500}
+.tree-box.winner{border-color:#0b9f6e;border-width:1.8px;background:#eefbf5;color:#0b9f6e;font-weight:800}
+.tree-box.loser{opacity:.45;text-decoration:line-through}
+.tree-svg .tree-line{fill:none;stroke:#555;stroke-width:1.2px}
+@media print{
+  .draw-sheet-page{page-break-after:always}
+  .draw-sheet-page:last-child{page-break-after:auto}
+}
+
 .spinning-text{
   font-weight:700;
   color:#b76a00;
@@ -826,6 +886,13 @@ button.is-loading::before{display:none}
         <h3>Jana Carta Suku Akhir (Silang Kumpulan A &amp; B)</h3>
         <button id="btnQf2" onclick="janaSukuAkhir2Grp()">🔀 Jana Carta Suku Akhir (A vs B)</button>
         <div id="resultQf2" class="result-box" style="display:none;"></div>
+    </div>
+
+    <!-- Cetak Carta Draw Sheet (peringkat kalah mati) -->
+    <div class="stage no-print" id="drawSheetPrintStage">
+        <h3>🖨️ Cetak Carta Draw Sheet</h3>
+        <p>Cetak carta peringkat kalah mati (Pusingan 16/Suku Akhir hingga Akhir) dalam bentuk kotak hitam/putih — untuk pengadil isi markah &amp; tandakan pemenang secara tangan di gelanggang.</p>
+        <button id="btnCetakDraw" onclick="cetakDrawSheet()">🖨️ Papar &amp; Cetak Carta Draw Sheet</button>
     </div>
 </div>
 
@@ -1690,6 +1757,143 @@ document.addEventListener("click", function(e){
         let resBox = document.getElementById("resultQf2");
         resBox.innerHTML = renderBracketHTML2(state);
         showResult(resBox);
+    }
+
+    // ====== Cetak Carta Draw Sheet (peringkat kalah mati) — gaya bracket pokok ======
+    function currentTournamentTitle() {
+        let t = document.getElementById("tournamentTitleInput").value.trim();
+        return t || "Kejohanan Pingpong KBTTC";
+    }
+
+    function renderTreeMatchesPrintHTML(hasR16, state) {
+        let RU = 40, BOX_W = 170, BOX_H = 30, COL_GAP = 50, OFF_Y = 26;
+        let cols = hasR16 ? ["r16", "qf", "sf", "final", "juara"] : ["qf", "sf", "final", "juara"];
+        let labels = hasR16
+            ? { r16: "Pusingan 16", qf: "Suku akhir", sf: "Separuh akhir", final: "Akhir", juara: "Juara" }
+            : { qf: "Suku akhir", sf: "Separuh akhir", final: "Akhir", juara: "Juara" };
+        let colX = {};
+        cols.forEach((c, i) => colX[c] = i * (BOX_W + COL_GAP));
+
+        let r16Y, qfA, qfB;
+        if (hasR16) {
+            r16Y = [0, 1, 2, 3, 4, 5, 6, 7].map(i => i * RU);
+            let r16Out = [0, 1, 2, 3].map(m => (r16Y[2 * m] + r16Y[2 * m + 1]) / 2);
+            qfA = r16Out;
+            qfB = r16Out.map(y => y + RU);
+        } else {
+            qfA = [0, 1, 2, 3].map(m => 2 * m * RU);
+            qfB = [0, 1, 2, 3].map(m => (2 * m + 1) * RU);
+        }
+        let qfOut = [0, 1, 2, 3].map(m => (qfA[m] + qfB[m]) / 2);
+        let sfA = [qfOut[0], qfOut[2]];
+        let sfB = [qfOut[1], qfOut[3]];
+        let sfOut = [(sfA[0] + sfB[0]) / 2, (sfA[1] + sfB[1]) / 2];
+        let finalA = sfOut[0], finalB = sfOut[1];
+        let finalOut = (finalA + finalB) / 2;
+
+        let allY = (hasR16 ? r16Y : qfA.concat(qfB)).concat([finalA, finalB, finalOut]);
+        let maxY = Math.max(...allY);
+        let totalW = cols.length * BOX_W + (cols.length - 1) * COL_GAP;
+        let totalH = maxY + OFF_Y + BOX_H;
+
+        let boxesHtml = "";
+        let linesSvg = "";
+
+        function slotCls(m, side, text) {
+            if (text.indexOf("Pemenang") === 0) return "blank";
+            if (m.pick === side) return "winner";
+            if (m.pick && m.pick !== side) return "loser";
+            return "";
+        }
+        function addBox(col, y, text, cls) {
+            let shown = cls === "blank" ? "" : escapeHtml(text);
+            boxesHtml += `<div class="tree-box ${cls}" style="left:${colX[col]}px;top:${y + OFF_Y - BOX_H / 2}px" title="${escapeHtml(text)}">${shown}</div>`;
+        }
+        function mergeAndConnect(colFrom, colTo, yA, yB, yOut, toY) {
+            let x1 = colX[colFrom] + BOX_W;
+            let xBar = x1 + COL_GAP / 2;
+            let x2 = colX[colTo];
+            let a = yA + OFF_Y, b = yB + OFF_Y, o = yOut + OFF_Y;
+            linesSvg += `<path class="tree-line" d="M${x1},${a} H${xBar}"/>`;
+            linesSvg += `<path class="tree-line" d="M${x1},${b} H${xBar}"/>`;
+            linesSvg += `<path class="tree-line" d="M${xBar},${a} V${b}"/>`;
+            linesSvg += `<path class="tree-line" d="M${xBar},${o} H${x2}"/>`;
+        }
+
+        if (hasR16) {
+            for (let m = 0; m < 4; m++) {
+                addBox("r16", r16Y[2 * m], state.r16[m].sideA, slotCls(state.r16[m], "A", state.r16[m].sideA));
+                addBox("r16", r16Y[2 * m + 1], state.r16[m].sideB, slotCls(state.r16[m], "B", state.r16[m].sideB));
+                let out = (r16Y[2 * m] + r16Y[2 * m + 1]) / 2;
+                mergeAndConnect("r16", "qf", r16Y[2 * m], r16Y[2 * m + 1], out, qfA[m]);
+            }
+        }
+        for (let m = 0; m < 4; m++) {
+            addBox("qf", qfA[m], state.qf[m].sideA, slotCls(state.qf[m], "A", state.qf[m].sideA));
+            addBox("qf", qfB[m], state.qf[m].sideB, slotCls(state.qf[m], "B", state.qf[m].sideB));
+        }
+        for (let m = 0; m < 4; m++) {
+            let s = Math.floor(m / 2);
+            let toY = (m % 2 === 0) ? sfA[s] : sfB[s];
+            mergeAndConnect("qf", "sf", qfA[m], qfB[m], qfOut[m], toY);
+        }
+        for (let s = 0; s < 2; s++) {
+            addBox("sf", sfA[s], state.sf[s].sideA, slotCls(state.sf[s], "A", state.sf[s].sideA));
+            addBox("sf", sfB[s], state.sf[s].sideB, slotCls(state.sf[s], "B", state.sf[s].sideB));
+            let toY = (s === 0) ? finalA : finalB;
+            mergeAndConnect("sf", "final", sfA[s], sfB[s], sfOut[s], toY);
+        }
+        addBox("final", finalA, state.final.sideA, slotCls(state.final, "A", state.final.sideA));
+        addBox("final", finalB, state.final.sideB, slotCls(state.final, "B", state.final.sideB));
+        mergeAndConnect("final", "juara", finalA, finalB, finalOut, finalOut);
+        let juaraText = state.final.winnerName || "Pemenang Akhir";
+        addBox("juara", finalOut, juaraText, juaraText.indexOf("Pemenang") === 0 ? "blank" : "winner");
+
+        let labelsHtml = cols.map(c => `<div class="tree-col-label" style="left:${colX[c]}px;width:${BOX_W}px;text-align:center">${labels[c]}</div>`).join("");
+
+        return `<div class="tree-wrap" style="width:${totalW}px;height:${totalH}px">
+            ${labelsHtml}
+            <svg class="tree-svg" width="${totalW}" height="${totalH}" style="position:absolute;top:0;left:0">${linesSvg}</svg>
+            ${boxesHtml}
+        </div>`;
+    }
+
+    function renderDrawSheetPrint4(state) {
+        return `<div class="draw-sheet-page">
+            <h4>${escapeHtml(currentTournamentTitle())}</h4>
+            <div class="draw-sheet-sub">Carta Draw Sheet — Peringkat Kalah Mati (4 Kumpulan)</div>
+            ${renderTreeMatchesPrintHTML(true, state)}
+        </div>`;
+    }
+
+    function renderDrawSheetPrint2(state) {
+        return `<div class="draw-sheet-page">
+            <h4>${escapeHtml(currentTournamentTitle())}</h4>
+            <div class="draw-sheet-sub">Carta Draw Sheet — Suku Akhir (Silang A/B) ➜ Separuh Akhir ➜ Akhir</div>
+            ${renderTreeMatchesPrintHTML(false, state)}
+        </div>`;
+    }
+
+    function cetakDrawSheet() {
+        let html = "";
+        if (tournamentMode === "4") {
+            let p16draw = JSON.parse(localStorage.getItem("kbttc_undian_p16") || "null");
+            if (!p16draw) {
+                alert("Sila buat Undian Pusingan 16 & Papar Carta dahulu!");
+                return;
+            }
+            html = renderDrawSheetPrint4(computeBracketState(p16draw));
+        } else {
+            let qf2draw = JSON.parse(localStorage.getItem("kbttc_undian_qf2") || "null");
+            if (!qf2draw) {
+                alert("Sila jana Carta Suku Akhir (A vs B) dahulu!");
+                return;
+            }
+            html = renderDrawSheetPrint2(computeBracketState2(qf2draw));
+        }
+
+        document.getElementById("printArea").innerHTML = html;
+        setTimeout(() => window.print(), 200);
     }
 
     function pilihPemenang(matchId, value) {
