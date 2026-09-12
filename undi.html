@@ -415,6 +415,24 @@ table.score-table th.no-col{
   .container > *{display:none !important}
   .container > #printArea{display:block !important}
   #printArea{position:static;width:100%}
+  /* PENTING: .container direka untuk paparan skrin dengan had lebar
+     min(980px,100%), padding kiri/kanan, dan overflow:hidden. Semasa
+     cetak, had 980px ni terpakai WALAUPUN kertas lebih lebar (A4/Letter
+     landscape ~1000-1100px), sebab min(980px,100%) sentiasa pilih 980px
+     (nilai lebih kecil). Ini menyebabkan carta pokok yang dikira ikut
+     lebar kertas sebenar jadi terpotong/melimpah ke muka surat ke-2.
+     Override ni buang had lebar & padding tersebut khas untuk cetak. */
+  .container{
+    width:auto !important;
+    max-width:none !important;
+    padding:0 !important;
+    margin:0 !important;
+    border:none !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    overflow:visible !important;
+  }
+  .container:before{display:none !important}
   .score-sheet-page{
     border:2px solid #000;
     box-shadow:none;
