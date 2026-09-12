@@ -476,6 +476,12 @@ table.score-table th.no-col{
   color:#555;
   margin:0 0 6px;
 }
+.draw-sheet-footer{
+  text-align:center;
+  font-size:11px;
+  color:#333;
+  margin-top:10px;
+}
 .tree-wrap{position:relative;margin:0 auto}
 .tree-col-label{
   position:absolute;
@@ -1815,6 +1821,10 @@ document.addEventListener("click", function(e){
         return t || "Kejohanan Pingpong KBTTC";
     }
 
+    function paparUrl() {
+        return new URL("papar.html", window.location.href).href;
+    }
+
     function renderTreeMatchesPrintHTML(hasR16, state) {
         let RU = 74, BOX_W = 165, BOX_H = 38, COL_GAP = 34, OFF_Y = 22;
         let cols = hasR16 ? ["r16", "qf", "sf", "final", "juara"] : ["qf", "sf", "final", "juara"];
@@ -1913,6 +1923,7 @@ document.addEventListener("click", function(e){
             <h4>${escapeHtml(currentTournamentTitle())}</h4>
             <div class="draw-sheet-sub">Carta Draw Sheet — Peringkat Kalah Mati (4 Kumpulan)</div>
             ${renderTreeMatchesPrintHTML(true, state)}
+            <div class="draw-sheet-footer">📺 Keputusan &amp; carta live: ${escapeHtml(paparUrl())}</div>
         </div>`;
     }
 
@@ -1921,6 +1932,7 @@ document.addEventListener("click", function(e){
             <h4>${escapeHtml(currentTournamentTitle())}</h4>
             <div class="draw-sheet-sub">Carta Draw Sheet — Suku Akhir (Silang A/B) ➜ Separuh Akhir ➜ Akhir</div>
             ${renderTreeMatchesPrintHTML(false, state)}
+            <div class="draw-sheet-footer">📺 Keputusan &amp; carta LIVE boleh diikuti di: ${escapeHtml(paparUrl())}</div>
         </div>`;
     }
 
