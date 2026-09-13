@@ -386,18 +386,22 @@ async function openHistory(id, label) {
         }
 
         let mode = data.kbttc_undian_mode || "4";
+        let qualifyCount = data.kbttc_undian_qualifycount || "3";
         let groups = data.kbttc_undian_groups || {};
         let ranks = data.kbttc_undian_ranks || {};
         let slotJuara = data.kbttc_undian_slotjuara || {};
         let p16draw = data.kbttc_undian_p16 || null;
+        let p16full = data.kbttc_undian_p16full || null;
         let qf2draw = data.kbttc_undian_qf2 || null;
         let matches = data.kbttc_undian_matches || {};
 
         document.getElementById("groupArea").innerHTML = renderGroups(groups, ranks) || "<div class='empty-msg'>Tiada data kumpulan.</div>";
 
-        // Panel "Penempatan Juara ke Suku Akhir" cuma relevan untuk mod 4 Kumpulan.
+        // Panel "Penempatan Juara ke Suku Akhir" cuma relevan untuk mod 4
+        // Kumpulan dengan pilihan "3 Terbaik" (ada bye). Tiada bye untuk
+        // "4 Terbaik" (Pusingan 16 penuh), jadi panel ini disembunyikan.
         let slotPanel = document.getElementById("slotPanel");
-        if (mode === "2") {
+        if (mode === "2" || qualifyCount === "4") {
             slotPanel.style.display = "none";
         } else {
             slotPanel.style.display = "block";
@@ -407,6 +411,9 @@ async function openHistory(id, label) {
         if (mode === "2" && qf2draw) {
             let state = computeBracketState2(qf2draw, groups, ranks, matches);
             document.getElementById("bracketArea").innerHTML = renderBracket2(state);
+        } else if (mode !== "2" && qualifyCount === "4" && p16full) {
+            let state = computeBracketStateFull16(p16full, groups, ranks, matches);
+            document.getElementById("bracketArea").innerHTML = renderBracket16(state);
         } else if (mode !== "2" && p16draw) {
             let state = computeBracketState(p16draw, groups, ranks, matches);
             document.getElementById("bracketArea").innerHTML = renderBracket(state);
@@ -551,6 +558,48 @@ function computeBracketState2(qf2draw, groups, ranks, matches) {
     return state;
 }
 
+// Mod 4 Kumpulan, "4 Terbaik": Pusingan 16 PENUH (16 pasukan, tiada bye).
+function computeBracketStateFull16(p16full, groups, ranks, matches) {
+    let state = { r16: [], qf: [], sf: [] };
+
+    p16full.r16matches.forEach((pair, i) => {
+        let sideA = rankName(pair[0].g, pair[0].p, groups, ranks);
+        let sideB = rankName(pair[1].g, pair[1].p, groups, ranks);
+        let pick = matches[`r16-${i}`] || "";
+        let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+        state.r16.push({ sideA, sideB, pick, winnerName, enabled: true });
+    });
+
+    for (let i = 0; i < 4; i++) {
+        let depA = state.r16[2 * i].winnerName;
+        let depB = state.r16[2 * i + 1].winnerName;
+        let sideA = depA || `Pemenang Pusingan 16 (${2 * i + 1})`;
+        let sideB = depB || `Pemenang Pusingan 16 (${2 * i + 2})`;
+        let pick = matches[`qf-${i}`] || "";
+        let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+        state.qf.push({ sideA, sideB, pick, winnerName, enabled: !!depA && !!depB });
+    }
+
+    [[0, 1], [2, 3]].forEach((pair, si) => {
+        let depA = state.qf[pair[0]].winnerName;
+        let depB = state.qf[pair[1]].winnerName;
+        let sideA = depA || `Pemenang Q${pair[0] + 1}`;
+        let sideB = depB || `Pemenang Q${pair[1] + 1}`;
+        let pick = matches[`sf-${si}`] || "";
+        let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+        state.sf.push({ sideA, sideB, pick, winnerName, enabled: !!depA && !!depB });
+    });
+
+    let depA = state.sf[0].winnerName, depB = state.sf[1].winnerName;
+    let fSideA = depA || "Pemenang Separuh Akhir 1";
+    let fSideB = depB || "Pemenang Separuh Akhir 2";
+    let fPick = matches["final"] || "";
+    let fWinner = fPick === "A" ? fSideA : (fPick === "B" ? fSideB : null);
+    state.final = { sideA: fSideA, sideB: fSideB, pick: fPick, winnerName: fWinner, enabled: !!depA && !!depB };
+
+    return state;
+}
+
 function resultLine(m, side) {
     let name = side === "A" ? m.sideA : m.sideB;
     let cls = "result-line";
@@ -663,6 +712,86 @@ function renderBracket(state) {
 
 function renderBracket2(state) {
     return renderTreeMatchesHTML(false, state);
+}
+
+// Carta pokok untuk "4 Terbaik": Pusingan 16 PENUH (16 kotak, 8 perlawanan)
+// -> Suku Akhir -> Separuh Akhir -> Akhir.
+function renderTreeMatchesHTML16(state) {
+    let RU = 42, BOX_W = 190, BOX_H = 32, COL_GAP = 60, OFF_Y = 28;
+    let cols = ["r16", "qf", "sf", "final"];
+    let labels = { r16: "Pusingan 16", qf: "Suku akhir", sf: "Separuh akhir", final: "Akhir" };
+    let colX = {};
+    cols.forEach((c, i) => colX[c] = i * (BOX_W + COL_GAP));
+
+    let r16Y = Array.from({ length: 16 }, (_, i) => i * RU);
+    function matchOut(m) { return (r16Y[2 * m] + r16Y[2 * m + 1]) / 2; }
+    let qfA = [0, 1, 2, 3].map(i => matchOut(2 * i));
+    let qfB = [0, 1, 2, 3].map(i => matchOut(2 * i + 1));
+    let qfOut = [0, 1, 2, 3].map(i => (qfA[i] + qfB[i]) / 2);
+    let sfA = [qfOut[0], qfOut[2]];
+    let sfB = [qfOut[1], qfOut[3]];
+    let sfOut = [(sfA[0] + sfB[0]) / 2, (sfA[1] + sfB[1]) / 2];
+    let finalA = sfOut[0], finalB = sfOut[1];
+
+    let maxY = Math.max(...r16Y, finalA, finalB);
+    let totalW = cols.length * BOX_W + (cols.length - 1) * COL_GAP;
+    let totalH = maxY + OFF_Y + BOX_H;
+
+    let boxesHtml = "";
+    let linesSvg = "";
+
+    function slotCls(m, side) {
+        if (!m.enabled) return "pending";
+        if (m.pick === side) return "winner";
+        if (m.pick && m.pick !== side) return "loser";
+        return "";
+    }
+    function addBox(col, y, text, cls) {
+        boxesHtml += `<div class="tree-box ${cls}" style="left:${colX[col]}px;top:${y + OFF_Y - BOX_H / 2}px" title="${escapeHtml(text)}">${escapeHtml(text)}</div>`;
+    }
+    function mergeAndConnect(colFrom, colTo, yA, yB, yOut) {
+        let x1 = colX[colFrom] + BOX_W;
+        let xBar = x1 + COL_GAP / 2;
+        let x2 = colX[colTo];
+        let a = yA + OFF_Y, b = yB + OFF_Y, o = yOut + OFF_Y;
+        linesSvg += `<path class="tree-line" d="M${x1},${a} H${xBar}"/>`;
+        linesSvg += `<path class="tree-line" d="M${x1},${b} H${xBar}"/>`;
+        linesSvg += `<path class="tree-line" d="M${xBar},${a} V${b}"/>`;
+        linesSvg += `<path class="tree-line" d="M${xBar},${o} H${x2}"/>`;
+    }
+
+    for (let m = 0; m < 8; m++) {
+        addBox("r16", r16Y[2 * m], state.r16[m].sideA, slotCls(state.r16[m], "A"));
+        addBox("r16", r16Y[2 * m + 1], state.r16[m].sideB, slotCls(state.r16[m], "B"));
+        mergeAndConnect("r16", "qf", r16Y[2 * m], r16Y[2 * m + 1], matchOut(m));
+    }
+    for (let i = 0; i < 4; i++) {
+        addBox("qf", qfA[i], state.qf[i].sideA, slotCls(state.qf[i], "A"));
+        addBox("qf", qfB[i], state.qf[i].sideB, slotCls(state.qf[i], "B"));
+        mergeAndConnect("qf", "sf", qfA[i], qfB[i], qfOut[i]);
+    }
+    for (let s = 0; s < 2; s++) {
+        addBox("sf", sfA[s], state.sf[s].sideA, slotCls(state.sf[s], "A"));
+        addBox("sf", sfB[s], state.sf[s].sideB, slotCls(state.sf[s], "B"));
+        mergeAndConnect("sf", "final", sfA[s], sfB[s], sfOut[s]);
+    }
+    addBox("final", finalA, state.final.sideA, slotCls(state.final, "A"));
+    addBox("final", finalB, state.final.sideB, slotCls(state.final, "B"));
+
+    let labelsHtml = cols.map(c => `<div class="tree-col-label" style="left:${colX[c]}px;width:${BOX_W}px;text-align:center">${labels[c]}</div>`).join("");
+    let champHtml = state.final.winnerName
+        ? `<div class="champion-banner">🏆 JUARA KEJOHANAN: ${escapeHtml(state.final.winnerName)}</div>`
+        : "";
+
+    return `${champHtml}<div class="tree-scroll"><div class="tree-wrap" style="width:${totalW}px;height:${totalH}px">
+        ${labelsHtml}
+        <svg class="tree-svg" width="${totalW}" height="${totalH}" style="position:absolute;top:0;left:0">${linesSvg}</svg>
+        ${boxesHtml}
+    </div></div>`;
+}
+
+function renderBracket16(state) {
+    return renderTreeMatchesHTML16(state);
 }
 
 loadHistoryList();

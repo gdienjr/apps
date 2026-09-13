@@ -248,6 +248,29 @@ ol.numbered-list li::before{
   padding:8px 11px;
 }
 
+/* Toggle kecil "3 Terbaik / 4 Terbaik" dalam bahagian Rekod Keputusan Kumpulan */
+.qualify-toggle-row{
+  margin:6px 0 16px;
+  padding:10px 12px;
+  background:#f3f7fc;
+  border:1px solid var(--border);
+  border-radius:10px;
+}
+.qualify-toggle-label{
+  font-size:12px;
+  color:var(--muted);
+  display:block;
+  margin-bottom:8px;
+  font-weight:700;
+}
+.qualify-toggle-row .mode-btn-row{gap:8px}
+.qualify-toggle-row .mode-btn-row button{
+  font-size:12px;
+  padding:8px 9px;
+  margin-top:0;
+  min-width:0;
+}
+
 /* Rekod Keputusan Kumpulan */
 .rank-form-wrap{margin-top:18px}
 .rank-form-wrap>b{display:block;margin-bottom:10px}
@@ -904,6 +927,13 @@ button.is-loading::before{display:none}
         <div id="rankFormWrap" class="rank-form-wrap" style="display:none;">
             <b>🏅 Rekod Keputusan Kumpulan</b>
             <p id="rankFormDesc" style="margin:-4px 0 12px;font-size:13px;color:var(--muted);"></p>
+            <div class="qualify-toggle-row no-print" id="qualifyToggleWrap" style="display:none;">
+                <span class="qualify-toggle-label">⚙️ Jumlah layak ke peringkat kalah mati setiap kumpulan (Mod 4 Kumpulan)</span>
+                <div class="mode-btn-row">
+                    <button type="button" id="btnQualify3" onclick="tukarQualifyCount('3')">3 Terbaik (Juara terus Suku Akhir)</button>
+                    <button type="button" id="btnQualify4" onclick="tukarQualifyCount('4')">4 Terbaik (Pusingan 16 Penuh)</button>
+                </div>
+            </div>
             <div id="rankFormArea" class="rank-container"></div>
         </div>
     </div>
@@ -918,9 +948,10 @@ button.is-loading::before{display:none}
 
     <!-- Peringkat 2 (mod 4 Kumpulan): Undian Pusingan 16 & Draw Sheet -->
     <div class="stage" id="stage4modeP16">
-        <h3>Undian Pusingan 16 & Penjanaan Carta (Draw Sheet)</h3>
-        <p>Tapisan ketat (elak jumpa kumpulan asal di Suku Akhir).</p>
+        <h3 id="stage4modeP16Title">Undian Pusingan 16 & Penjanaan Carta (Draw Sheet)</h3>
+        <p id="stage4modeP16Desc">Tapisan ketat (elak jumpa kumpulan asal di Suku Akhir).</p>
         <button id="btnP16" onclick="undiPusingan16()">⚡ Undian Pusingan 16 & Papar Carta</button>
+        <button id="btnP16Full" onclick="undiPusingan16Full()" style="display:none;">⚡ Undian Pusingan 16 Penuh & Papar Carta</button>
         <div id="resultP16" class="result-box" style="display:none;"></div>
     </div>
 
@@ -1011,6 +1042,35 @@ document.addEventListener("click", function(e){
     let currentGroups = {};
     // Format kejohanan semasa: "4" = 4 Kumpulan (A-D), "2" = 2 Kumpulan (A-B)
     let tournamentMode = "4";
+    // Untuk Mod 4 Kumpulan sahaja: "3" = 3 Terbaik/kumpulan (Juara terus ke
+    // Suku Akhir, Naib Juara & Tempat Ke-3 lawan Pusingan 16 — reka bentuk asal),
+    // "4" = 4 Terbaik/kumpulan (16 pasukan main Pusingan 16 PENUH, tiada bye).
+    let groupQualifyCount = "3";
+
+    // Bilangan tempat yang perlu direkodkan bagi setiap kumpulan, ikut format
+    // & pilihan 3/4 Terbaik semasa.
+    function placesForMode() {
+        return tournamentMode === "2" ? 4 : (groupQualifyCount === "4" ? 4 : 3);
+    }
+
+    // Penjana SVG penyambung bracket generik — n = bilangan kotak sumber
+    // (mesti genap), digabungkan secara berpasangan ke n/2 destinasi.
+    function bracketConnectorSvg(n) {
+        let paths = "";
+        let groupW = 100 / n;
+        for (let i = 0; i < n; i += 2) {
+            let xA = groupW * (i + 0.5);
+            let xB = groupW * (i + 1.5);
+            let xMid = (xA + xB) / 2;
+            paths += `<path d="M${xA},0 L${xA},10 L${xMid},20 L${xMid},24"/>`;
+            paths += `<path d="M${xB},0 L${xB},10 L${xMid},20"/>`;
+        }
+        return `<svg class="bracket-connector-svg" viewBox="0 0 100 24" preserveAspectRatio="none">${paths}</svg>`;
+    }
+
+    function shuffleArr(arr) {
+        return [...arr].sort(() => Math.random() - 0.5);
+    }
 
     // ====== Sync ke Google Sheet (backend) ======
     // Ganti URL bawah dengan "Web app URL" selepas deploy Google Apps Script.
@@ -1076,7 +1136,7 @@ document.addEventListener("click", function(e){
         try {
             let res = await fetch(API_URL, { cache: "no-store" });
             let data = await res.json();
-            let keys = ["kbttc_undian_title", "kbttc_undian_announcement", "kbttc_undian_mode", "kbttc_undian_peserta", "kbttc_undian_groups", "kbttc_undian_ranks", "kbttc_undian_slotjuara", "kbttc_undian_p16", "kbttc_undian_qf2", "kbttc_undian_matches"];
+            let keys = ["kbttc_undian_title", "kbttc_undian_announcement", "kbttc_undian_mode", "kbttc_undian_qualifycount", "kbttc_undian_peserta", "kbttc_undian_groups", "kbttc_undian_ranks", "kbttc_undian_slotjuara", "kbttc_undian_p16", "kbttc_undian_p16full", "kbttc_undian_qf2", "kbttc_undian_matches"];
             keys.forEach(k => {
                 if (data[k] !== undefined && data[k] !== null) {
                     localStorage.setItem(k, JSON.stringify(data[k]));
@@ -1100,14 +1160,75 @@ document.addEventListener("click", function(e){
         document.getElementById("btnMode4").classList.toggle("mode-active", tournamentMode === "4");
         document.getElementById("btnMode2").classList.toggle("mode-active", tournamentMode === "2");
         document.getElementById("modeStatus").innerText = tournamentMode === "4"
-            ? "Juara Group terus ke Suku Akhir; Naib Juara & Tempat Ke-3 lawan Pusingan 16."
+            ? (groupQualifyCount === "4"
+                ? "4 terbaik setiap kumpulan (A-D) main Pusingan 16 PENUH: Johan lwn Tempat Ke-4 & Naib Johan lwn Tempat Ke-3 kumpulan lain — ahli kumpulan sama hanya bertemu di Separuh Akhir."
+                : "Juara Group terus ke Suku Akhir; Naib Juara & Tempat Ke-3 lawan Pusingan 16.")
             : "4 terbaik setiap kumpulan terus ke Suku Akhir, bersilang antara A dan B.";
+        document.getElementById("stage2modeQf").style.display = tournamentMode === "2" ? "block" : "none";
+        updateQualifyUI();
+    }
+
+    // Kemaskan toggle "3 Terbaik / 4 Terbaik" & bahagian yang bergantung
+    // padanya (huraian borang keputusan, stage Undian Juara, stage Pusingan 16).
+    function updateQualifyUI() {
+        let wrap = document.getElementById("qualifyToggleWrap");
+        wrap.style.display = tournamentMode === "4" ? "block" : "none";
+
+        let btn3 = document.getElementById("btnQualify3");
+        let btn4 = document.getElementById("btnQualify4");
+        if (btn3 && btn4) {
+            btn3.classList.toggle("mode-active", groupQualifyCount === "3");
+            btn4.classList.toggle("mode-active", groupQualifyCount === "4");
+        }
+
         document.getElementById("rankFormDesc").innerText = tournamentMode === "2"
             ? "Masukkan nombor kedudukan pair dalam senarai kumpulan untuk Tempat 1, 2, 3 DAN 4 (4 terbaik layak ke Suku Akhir)."
-            : "Masukkan nombor kedudukan pair dalam senarai kumpulan (contoh: kalau nama ke-4 dalam list Kumpulan A menang tempat 1, taip 4).";
-        document.getElementById("stage4modeJuara").style.display = tournamentMode === "4" ? "block" : "none";
+            : (groupQualifyCount === "4"
+                ? "Masukkan nombor kedudukan pair dalam senarai kumpulan untuk Tempat 1, 2, 3 DAN 4 (4 terbaik setiap kumpulan layak ke Pusingan 16 penuh)."
+                : "Masukkan nombor kedudukan pair dalam senarai kumpulan (contoh: kalau nama ke-4 dalam list Kumpulan A menang tempat 1, taip 4).");
+
+        document.getElementById("stage4modeJuara").style.display = (tournamentMode === "4" && groupQualifyCount === "3") ? "block" : "none";
         document.getElementById("stage4modeP16").style.display = tournamentMode === "4" ? "block" : "none";
-        document.getElementById("stage2modeQf").style.display = tournamentMode === "2" ? "block" : "none";
+
+        if (tournamentMode === "4") {
+            let showFull = groupQualifyCount === "4";
+            document.getElementById("stage4modeP16Title").innerText = showFull
+                ? "Undian Pusingan 16 Penuh & Penjanaan Carta (Draw Sheet)"
+                : "Undian Pusingan 16 & Penjanaan Carta (Draw Sheet)";
+            document.getElementById("stage4modeP16Desc").innerText = showFull
+                ? "Johan lwn Tempat Ke-4 & Naib Johan lwn Tempat Ke-3 kumpulan lain (silang kumpulan). Ahli kumpulan sama hanya bertemu di Separuh Akhir."
+                : "Tapisan ketat (elak jumpa kumpulan asal di Suku Akhir).";
+            document.getElementById("btnP16").style.display = showFull ? "none" : "block";
+            document.getElementById("btnP16Full").style.display = showFull ? "block" : "none";
+        }
+    }
+
+    function tukarQualifyCount(count) {
+        if (tournamentMode !== "4" || count === groupQualifyCount) return;
+        let adaData = (currentGroups && Object.keys(currentGroups).length > 0);
+        if (adaData) {
+            if (!confirm("Menukar pilihan '3 Terbaik / 4 Terbaik' akan memadam Keputusan Kumpulan, Penempatan Juara & Carta sedia ada (Senarai Nama Pemain & Undian Grouping kekal). Teruskan?")) return;
+        }
+        groupQualifyCount = count;
+        saveState("kbttc_undian_qualifycount", count);
+        clearState("kbttc_undian_ranks");
+        clearState("kbttc_undian_slotjuara");
+        clearState("kbttc_undian_p16");
+        clearState("kbttc_undian_p16full");
+        clearState("kbttc_undian_matches");
+        slotJuara = {};
+
+        document.getElementById("resultJuara").style.display = "none";
+        document.getElementById("resultJuara").innerHTML = "";
+        document.getElementById("resultP16").style.display = "none";
+        document.getElementById("resultP16").innerHTML = "";
+        document.getElementById("rankFormArea").innerHTML = "";
+
+        updateQualifyUI();
+
+        if (currentGroups && Object.keys(currentGroups).length) {
+            renderRankForms(currentGroups);
+        }
     }
 
     function resetHasilUndianUI() {
@@ -1139,6 +1260,7 @@ document.addEventListener("click", function(e){
         clearState("kbttc_undian_ranks");
         clearState("kbttc_undian_slotjuara");
         clearState("kbttc_undian_p16");
+        clearState("kbttc_undian_p16full");
         clearState("kbttc_undian_qf2");
         clearState("kbttc_undian_matches");
         resetHasilUndianUI();
@@ -1158,7 +1280,7 @@ document.addEventListener("click", function(e){
 
     function renderRankForms(groups) {
         let wrap = document.getElementById("rankFormArea");
-        let places = tournamentMode === "2" ? 4 : 3;
+        let places = placesForMode();
         let medals = ["🥇", "🥈", "🥉", "4️⃣"];
         let labels = ["Tempat 1", "Tempat 2", "Tempat 3", "Tempat 4"];
         let html = "";
@@ -1181,7 +1303,7 @@ document.addEventListener("click", function(e){
     function simpanKeputusan(g, skipPush) {
         let pairs = currentGroups[g];
         let n = pairs.length;
-        let places = tournamentMode === "2" ? 4 : 3;
+        let places = placesForMode();
         let medals = ["🥇", "🥈", "🥉", "4️⃣"];
         let labels = ["Tempat 1", "Tempat 2", "Tempat 3", "Tempat 4"];
 
@@ -1264,8 +1386,10 @@ document.addEventListener("click", function(e){
             clearState("kbttc_undian_ranks"),
             clearState("kbttc_undian_slotjuara"),
             clearState("kbttc_undian_p16"),
+            clearState("kbttc_undian_p16full"),
             clearState("kbttc_undian_qf2"),
-            clearState("kbttc_undian_matches")
+            clearState("kbttc_undian_matches"),
+            clearState("kbttc_undian_qualifycount")
         ]);
 
         location.reload();
@@ -1287,6 +1411,13 @@ document.addEventListener("click", function(e){
             try { tournamentMode = JSON.parse(savedMode); } catch (e) { tournamentMode = savedMode; }
         }
         if (tournamentMode !== "2") tournamentMode = "4";
+
+        let savedQualify = localStorage.getItem("kbttc_undian_qualifycount");
+        if (savedQualify) {
+            try { groupQualifyCount = JSON.parse(savedQualify); } catch (e) { groupQualifyCount = savedQualify; }
+        }
+        if (groupQualifyCount !== "4") groupQualifyCount = "3";
+
         updateModeUI();
 
         let savedTitle = localStorage.getItem("kbttc_undian_title");
@@ -1329,7 +1460,7 @@ document.addEventListener("click", function(e){
             Object.keys(savedRanks).forEach(g => {
                 let r = savedRanks[g];
                 if (!document.getElementById(`rankIn-${g}-1`)) return;
-                let places = tournamentMode === "2" ? 4 : 3;
+                let places = placesForMode();
                 for (let i = 1; i <= places; i++) {
                     if (r[`p${i}`] !== undefined && document.getElementById(`rankIn-${g}-${i}`)) {
                         document.getElementById(`rankIn-${g}-${i}`).value = r[`p${i}`];
@@ -1342,14 +1473,18 @@ document.addEventListener("click", function(e){
         }
 
         if (tournamentMode === "4") {
-            let savedSlotJuara = localStorage.getItem("kbttc_undian_slotjuara");
-            if (savedSlotJuara) {
-                slotJuara = JSON.parse(savedSlotJuara);
-                let resJuara = document.getElementById("resultJuara");
-                resJuara.innerHTML = renderSlotJuaraResult(slotJuara);
-                showResult(resJuara);
+            if (groupQualifyCount === "4") {
+                renderPusingan16FullUI();
+            } else {
+                let savedSlotJuara = localStorage.getItem("kbttc_undian_slotjuara");
+                if (savedSlotJuara) {
+                    slotJuara = JSON.parse(savedSlotJuara);
+                    let resJuara = document.getElementById("resultJuara");
+                    resJuara.innerHTML = renderSlotJuaraResult(slotJuara);
+                    showResult(resJuara);
+                }
+                renderPusingan16UI();
             }
-            renderPusingan16UI();
         } else {
             renderQf2UI();
         }
@@ -1460,6 +1595,7 @@ document.addEventListener("click", function(e){
             clearState("kbttc_undian_ranks");
             clearState("kbttc_undian_slotjuara");
             clearState("kbttc_undian_p16");
+            clearState("kbttc_undian_p16full");
             clearState("kbttc_undian_qf2");
             clearState("kbttc_undian_matches");
             document.getElementById("scoreBtnWrap").style.display = "block";
@@ -1648,6 +1784,54 @@ document.addEventListener("click", function(e){
         return state;
     }
 
+    // ====== Mod 4 Kumpulan, "4 Terbaik": Pusingan 16 PENUH (16 pasukan, tiada bye) ======
+    // r16matches: array 8 pasangan [{g,p},{g,p}]. Susunan pasangan sengaja
+    // dijana supaya setiap "kuadran" bracket (2 perlawanan Pusingan 16 ->
+    // 1 Suku Akhir) ada seorang wakil daripada SETIAP kumpulan (A,B,C,D) —
+    // jadi ahli kumpulan yang sama paling awal boleh bertembung ialah di
+    // Separuh Akhir, bukan di Pusingan 16/Suku Akhir.
+    function computeBracketStateFull16(p16full) {
+        let matches = JSON.parse(localStorage.getItem("kbttc_undian_matches") || "{}");
+        let state = { r16: [], qf: [], sf: [] };
+
+        p16full.r16matches.forEach((pair, i) => {
+            let sideA = rankName(pair[0].g, pair[0].p);
+            let sideB = rankName(pair[1].g, pair[1].p);
+            let pick = matches[`r16-${i}`] || "";
+            let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+            state.r16.push({ id: `r16-${i}`, sideA, sideB, pick, winnerName, enabled: true });
+        });
+
+        for (let i = 0; i < 4; i++) {
+            let depA = state.r16[2 * i].winnerName;
+            let depB = state.r16[2 * i + 1].winnerName;
+            let sideA = depA || `Pemenang Pusingan 16 (${2 * i + 1})`;
+            let sideB = depB || `Pemenang Pusingan 16 (${2 * i + 2})`;
+            let pick = matches[`qf-${i}`] || "";
+            let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+            state.qf.push({ id: `qf-${i}`, sideA, sideB, pick, winnerName, enabled: !!depA && !!depB });
+        }
+
+        [[0, 1], [2, 3]].forEach((pair, si) => {
+            let depA = state.qf[pair[0]].winnerName;
+            let depB = state.qf[pair[1]].winnerName;
+            let sideA = depA || `Pemenang Q${pair[0] + 1}`;
+            let sideB = depB || `Pemenang Q${pair[1] + 1}`;
+            let pick = matches[`sf-${si}`] || "";
+            let winnerName = pick === "A" ? sideA : (pick === "B" ? sideB : null);
+            state.sf.push({ id: `sf-${si}`, sideA, sideB, pick, winnerName, enabled: !!depA && !!depB });
+        });
+
+        let depA = state.sf[0].winnerName, depB = state.sf[1].winnerName;
+        let fSideA = depA || "Pemenang Separuh Akhir 1";
+        let fSideB = depB || "Pemenang Separuh Akhir 2";
+        let fPick = matches["final"] || "";
+        let fWinner = fPick === "A" ? fSideA : (fPick === "B" ? fSideB : null);
+        state.final = { id: "final", sideA: fSideA, sideB: fSideB, pick: fPick, winnerName: fWinner, enabled: !!depA && !!depB };
+
+        return state;
+    }
+
     function pickRow(m) {
         let disabled = m.enabled ? "" : "disabled";
         // Papar nama KEDUA-DUA pihak sebagai teks terus (bukan tersembunyi
@@ -1797,6 +1981,72 @@ document.addEventListener("click", function(e){
         return html;
     }
 
+    // Bracket "4 Terbaik": Pusingan 16 PENUH — 8 perlawanan, terus ke Suku
+    // Akhir tanpa sebarang bye.
+    function renderBracketHTML16(state) {
+        let html = "";
+        if (state.final.winnerName) {
+            html += `<div class="champion-banner">🏆 JUARA KEJOHANAN: ${escapeHtml(state.final.winnerName)}</div>`;
+        }
+
+        html += `<div class="bracket-box">
+            <div class="bracket-heading">📊 Carta Draw Sheet &mdash; Pusingan 16 Penuh</div>
+            <div class="bracket-stage">
+                <div class="bracket-stage-label">Pusingan 16</div>
+                <div class="bracket-grid">`;
+        for (let i = 0; i < 8; i++) {
+            html += `<div class="bracket-card">
+                <div class="bracket-mini-label">Pusingan 16 (${i + 1})</div>
+                ${pickRow(state.r16[i])}
+            </div>`;
+        }
+        html += `</div></div>
+
+            ${bracketConnectorSvg(8)}
+
+            <div class="bracket-stage">
+                <div class="bracket-stage-label">Suku Akhir</div>
+                <div class="bracket-grid">`;
+        for (let i = 0; i < 4; i++) {
+            html += `<div class="bracket-card">
+                <div class="bracket-mini-label">Suku Akhir (Q${i + 1})</div>
+                ${pickRow(state.qf[i])}
+            </div>`;
+        }
+        html += `</div></div>
+
+            ${bracketConnectorSvg(4)}
+
+            <div class="bracket-stage">
+                <div class="bracket-stage-label">Separuh Akhir</div>
+                <div class="bracket-grid cols-2">
+                    <div class="bracket-card">
+                        <div class="bracket-mini-label">Separuh Akhir 1</div>
+                        ${pickRow(state.sf[0])}
+                    </div>
+                    <div class="bracket-card">
+                        <div class="bracket-mini-label">Separuh Akhir 2</div>
+                        ${pickRow(state.sf[1])}
+                    </div>
+                </div>
+            </div>
+
+            ${bracketConnectorSvg(2)}
+
+            <div class="bracket-stage">
+                <div class="bracket-stage-label">🏆 Akhir</div>
+                <div class="bracket-grid cols-1">
+                    <div class="bracket-card final-card">
+                        <div class="bracket-mini-label">Perlawanan Akhir</div>
+                        ${pickRow(state.final)}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+        return html;
+    }
+
     function renderPusingan16UI() {
         let p16draw = JSON.parse(localStorage.getItem("kbttc_undian_p16") || "null");
         if (!p16draw) return;
@@ -1812,6 +2062,15 @@ document.addEventListener("click", function(e){
         let state = computeBracketState2(qf2draw);
         let resBox = document.getElementById("resultQf2");
         resBox.innerHTML = renderBracketHTML2(state);
+        showResult(resBox);
+    }
+
+    function renderPusingan16FullUI() {
+        let p16full = JSON.parse(localStorage.getItem("kbttc_undian_p16full") || "null");
+        if (!p16full) return;
+        let state = computeBracketStateFull16(p16full);
+        let resBox = document.getElementById("resultP16");
+        resBox.innerHTML = renderBracketHTML16(state);
         showResult(resBox);
     }
 
@@ -1918,6 +2177,85 @@ document.addEventListener("click", function(e){
         </div>`;
     }
 
+    // Versi cetak carta pokok untuk "4 Terbaik": Pusingan 16 PENUH
+    // (16 kotak, 8 perlawanan) -> Suku Akhir -> Separuh Akhir -> Akhir -> Juara.
+    function renderTreeMatchesPrintHTML16(state) {
+        let RU = 34, BOX_W = 150, BOX_H = 26, COL_GAP = 24, OFF_Y = 14;
+        let cols = ["r16", "qf", "sf", "final", "juara"];
+        let labels = { r16: "Pusingan 16", qf: "Suku akhir", sf: "Separuh akhir", final: "Akhir", juara: "Juara" };
+        let colX = {};
+        cols.forEach((c, i) => colX[c] = i * (BOX_W + COL_GAP));
+
+        let r16Y = Array.from({ length: 16 }, (_, i) => i * RU);
+        function matchOut(m) { return (r16Y[2 * m] + r16Y[2 * m + 1]) / 2; }
+        let qfA = [0, 1, 2, 3].map(i => matchOut(2 * i));
+        let qfB = [0, 1, 2, 3].map(i => matchOut(2 * i + 1));
+        let qfOut = [0, 1, 2, 3].map(i => (qfA[i] + qfB[i]) / 2);
+        let sfA = [qfOut[0], qfOut[2]];
+        let sfB = [qfOut[1], qfOut[3]];
+        let sfOut = [(sfA[0] + sfB[0]) / 2, (sfA[1] + sfB[1]) / 2];
+        let finalA = sfOut[0], finalB = sfOut[1];
+        let finalOut = (finalA + finalB) / 2;
+
+        let allY = r16Y.concat([finalA, finalB, finalOut]);
+        let maxY = Math.max(...allY);
+        let totalW = cols.length * BOX_W + (cols.length - 1) * COL_GAP;
+        let totalH = maxY + OFF_Y + BOX_H;
+
+        let boxesHtml = "";
+        let linesSvg = "";
+
+        function slotCls(m, side, text) {
+            if (text.indexOf("Pemenang") === 0) return "blank";
+            if (m.pick === side) return "winner";
+            if (m.pick && m.pick !== side) return "loser";
+            return "";
+        }
+        function addBox(col, y, text, cls) {
+            let shown = cls === "blank" ? "" : escapeHtml(text);
+            boxesHtml += `<div class="tree-box ${cls}" style="left:${colX[col]}px;top:${y + OFF_Y - BOX_H / 2}px;width:${BOX_W}px;height:${BOX_H}px;font-size:11.5px;" title="${escapeHtml(text)}">${shown}</div>`;
+        }
+        function mergeAndConnect(colFrom, colTo, yA, yB, yOut) {
+            let x1 = colX[colFrom] + BOX_W;
+            let xBar = x1 + COL_GAP / 2;
+            let x2 = colX[colTo];
+            let a = yA + OFF_Y, b = yB + OFF_Y, o = yOut + OFF_Y;
+            linesSvg += `<path class="tree-line" d="M${x1},${a} H${xBar}"/>`;
+            linesSvg += `<path class="tree-line" d="M${x1},${b} H${xBar}"/>`;
+            linesSvg += `<path class="tree-line" d="M${xBar},${a} V${b}"/>`;
+            linesSvg += `<path class="tree-line" d="M${xBar},${o} H${x2}"/>`;
+        }
+
+        for (let m = 0; m < 8; m++) {
+            addBox("r16", r16Y[2 * m], state.r16[m].sideA, slotCls(state.r16[m], "A", state.r16[m].sideA));
+            addBox("r16", r16Y[2 * m + 1], state.r16[m].sideB, slotCls(state.r16[m], "B", state.r16[m].sideB));
+            mergeAndConnect("r16", "qf", r16Y[2 * m], r16Y[2 * m + 1], matchOut(m));
+        }
+        for (let i = 0; i < 4; i++) {
+            addBox("qf", qfA[i], state.qf[i].sideA, slotCls(state.qf[i], "A", state.qf[i].sideA));
+            addBox("qf", qfB[i], state.qf[i].sideB, slotCls(state.qf[i], "B", state.qf[i].sideB));
+            mergeAndConnect("qf", "sf", qfA[i], qfB[i], qfOut[i]);
+        }
+        for (let s = 0; s < 2; s++) {
+            addBox("sf", sfA[s], state.sf[s].sideA, slotCls(state.sf[s], "A", state.sf[s].sideA));
+            addBox("sf", sfB[s], state.sf[s].sideB, slotCls(state.sf[s], "B", state.sf[s].sideB));
+            mergeAndConnect("sf", "final", sfA[s], sfB[s], sfOut[s]);
+        }
+        addBox("final", finalA, state.final.sideA, slotCls(state.final, "A", state.final.sideA));
+        addBox("final", finalB, state.final.sideB, slotCls(state.final, "B", state.final.sideB));
+        mergeAndConnect("final", "juara", finalA, finalB, finalOut);
+        let juaraText = state.final.winnerName || "Pemenang Akhir";
+        addBox("juara", finalOut, juaraText, juaraText.indexOf("Pemenang") === 0 ? "blank" : "winner");
+
+        let labelsHtml = cols.map(c => `<div class="tree-col-label" style="left:${colX[c]}px;width:${BOX_W}px;text-align:center">${labels[c]}</div>`).join("");
+
+        return `<div class="tree-wrap" style="width:${totalW}px;height:${totalH}px">
+            ${labelsHtml}
+            <svg class="tree-svg" width="${totalW}" height="${totalH}" style="position:absolute;top:0;left:0">${linesSvg}</svg>
+            ${boxesHtml}
+        </div>`;
+    }
+
     function renderDrawSheetPrint4(state) {
         return `<div class="draw-sheet-page">
             <h4>${escapeHtml(currentTournamentTitle())}</h4>
@@ -1936,15 +2274,33 @@ document.addEventListener("click", function(e){
         </div>`;
     }
 
+    function renderDrawSheetPrint16(state) {
+        return `<div class="draw-sheet-page">
+            <h4>${escapeHtml(currentTournamentTitle())}</h4>
+            <div class="draw-sheet-sub">Carta Draw Sheet — Pusingan 16 Penuh (4 Terbaik x 4 Kumpulan)</div>
+            ${renderTreeMatchesPrintHTML16(state)}
+            <div class="draw-sheet-footer">📺 Keputusan &amp; carta live: ${escapeHtml(paparUrl())}</div>
+        </div>`;
+    }
+
     function cetakDrawSheet() {
         let html = "";
         if (tournamentMode === "4") {
-            let p16draw = JSON.parse(localStorage.getItem("kbttc_undian_p16") || "null");
-            if (!p16draw) {
-                alert("Sila buat Undian Pusingan 16 & Papar Carta dahulu!");
-                return;
+            if (groupQualifyCount === "4") {
+                let p16full = JSON.parse(localStorage.getItem("kbttc_undian_p16full") || "null");
+                if (!p16full) {
+                    alert("Sila buat Undian Pusingan 16 Penuh & Papar Carta dahulu!");
+                    return;
+                }
+                html = renderDrawSheetPrint16(computeBracketStateFull16(p16full));
+            } else {
+                let p16draw = JSON.parse(localStorage.getItem("kbttc_undian_p16") || "null");
+                if (!p16draw) {
+                    alert("Sila buat Undian Pusingan 16 & Papar Carta dahulu!");
+                    return;
+                }
+                html = renderDrawSheetPrint4(computeBracketState(p16draw));
             }
-            html = renderDrawSheetPrint4(computeBracketState(p16draw));
         } else {
             let qf2draw = JSON.parse(localStorage.getItem("kbttc_undian_qf2") || "null");
             if (!qf2draw) {
@@ -1966,14 +2322,28 @@ document.addEventListener("click", function(e){
             delete matches[matchId];
         }
         // Padam keputusan semua pusingan seterusnya yang bergantung pada match ini (cascade penuh, elak data lapuk)
-        let downstream = tournamentMode === "2" ? {
-            "qf-0": ["sf-0"], "qf-1": ["sf-0"], "qf-2": ["sf-1"], "qf-3": ["sf-1"],
-            "sf-0": ["final"], "sf-1": ["final"]
-        } : {
-            "r16-0": ["qf-0"], "r16-1": ["qf-1"], "r16-2": ["qf-2"], "r16-3": ["qf-3"],
-            "qf-0": ["sf-0"], "qf-1": ["sf-0"], "qf-2": ["sf-1"], "qf-3": ["sf-1"],
-            "sf-0": ["final"], "sf-1": ["final"]
-        };
+        let downstream;
+        if (tournamentMode === "2") {
+            downstream = {
+                "qf-0": ["sf-0"], "qf-1": ["sf-0"], "qf-2": ["sf-1"], "qf-3": ["sf-1"],
+                "sf-0": ["final"], "sf-1": ["final"]
+            };
+        } else if (groupQualifyCount === "4") {
+            downstream = {
+                "r16-0": ["qf-0"], "r16-1": ["qf-0"],
+                "r16-2": ["qf-1"], "r16-3": ["qf-1"],
+                "r16-4": ["qf-2"], "r16-5": ["qf-2"],
+                "r16-6": ["qf-3"], "r16-7": ["qf-3"],
+                "qf-0": ["sf-0"], "qf-1": ["sf-0"], "qf-2": ["sf-1"], "qf-3": ["sf-1"],
+                "sf-0": ["final"], "sf-1": ["final"]
+            };
+        } else {
+            downstream = {
+                "r16-0": ["qf-0"], "r16-1": ["qf-1"], "r16-2": ["qf-2"], "r16-3": ["qf-3"],
+                "qf-0": ["sf-0"], "qf-1": ["sf-0"], "qf-2": ["sf-1"], "qf-3": ["sf-1"],
+                "sf-0": ["final"], "sf-1": ["final"]
+            };
+        }
         let queue = [...(downstream[matchId] || [])];
         while (queue.length) {
             let id = queue.shift();
@@ -1984,6 +2354,8 @@ document.addEventListener("click", function(e){
         saveState("kbttc_undian_matches", matches);
         if (tournamentMode === "2") {
             renderQf2UI();
+        } else if (groupQualifyCount === "4") {
+            renderPusingan16FullUI();
         } else {
             renderPusingan16UI();
         }
@@ -2045,6 +2417,72 @@ document.addEventListener("click", function(e){
 
             setBtnLoading(btn, false);
             renderPusingan16UI();
+        }, 5000);
+    }
+
+    // Mod 4 Kumpulan, "4 Terbaik": undi Pusingan 16 PENUH (16 pasukan,
+    // 8 perlawanan, tiada bye). Peraturan pasangan:
+    //   1) Johan (Tempat 1) sesebuah kumpulan sentiasa lawan Tempat Ke-4
+    //      KUMPULAN LAIN (dan begitu sebaliknya).
+    //   2) Naib Johan (Tempat 2) sesebuah kumpulan sentiasa lawan
+    //      Tempat Ke-3 KUMPULAN LAIN (dan begitu sebaliknya).
+    //   3) Ahli dalam kumpulan yang sama TIDAK akan bertemu di Pusingan 16
+    //      atau Suku Akhir — hanya boleh bertemu di Separuh Akhir.
+    //
+    // Cara ni dijamin guna susunan "petak ajaib" (Latin square): setiap
+    // kumpulan (A-D) diberi satu "offset" unik & rawak (0-3). Kedudukan
+    // (rank) pasukan kumpulan tu dalam kuadran ke-qi = ((qi + offset) % 4) + 1.
+    // Ini menjamin SETIAP kuadran (2 perlawanan Pusingan 16 -> 1 Suku
+    // Akhir) ada TEPAT SEORANG wakil setiap kumpulan (memenuhi peraturan 3),
+    // DAN tepat satu pasukan bagi setiap rank 1,2,3,4 (membolehkan
+    // pasangan 1-lwn-4 & 2-lwn-3 automatik silang kumpulan, memenuhi
+    // peraturan 1 & 2).
+    function undiPusingan16Full() {
+        let ranks = JSON.parse(localStorage.getItem("kbttc_undian_ranks") || "{}");
+        let groupKeys = ['A', 'B', 'C', 'D'];
+        let missing = groupKeys.filter(g => !ranks[g] || ranks[g].p4 === undefined);
+        if (missing.length) {
+            alert("Sila lengkapkan Keputusan Kumpulan (Tempat 1 hingga 4) untuk semua kumpulan (A, B, C, D) terlebih dahulu!");
+            return;
+        }
+
+        let btn = document.getElementById("btnP16Full");
+        let resBox = document.getElementById("resultP16");
+        setBtnLoading(btn, true);
+        showResult(resBox);
+        resBox.innerHTML = "<div class='spinning-text'>⚡ Undian Sedang Berjalan...</div>";
+
+        setTimeout(() => {
+            let offsets = shuffleArr([0, 1, 2, 3]);
+            let offsetByGroup = {};
+            groupKeys.forEach((g, i) => offsetByGroup[g] = offsets[i]);
+
+            // quadrants[qi] = { 1: {g,p}, 2: {g,p}, 3: {g,p}, 4: {g,p} }
+            let quadrants = [0, 1, 2, 3].map(qi => {
+                let byRank = {};
+                groupKeys.forEach(g => {
+                    let rank = ((qi + offsetByGroup[g]) % 4) + 1;
+                    byRank[rank] = { g, p: rank };
+                });
+                return byRank;
+            });
+
+            quadrants = shuffleArr(quadrants); // kosmetik sahaja, tak jejas peraturan
+
+            let r16matches = [];
+            quadrants.forEach(q => {
+                // Johan (1) lwn Tempat Ke-4 (4) — silang kumpulan terjamin
+                r16matches.push(Math.random() < 0.5 ? [q[1], q[4]] : [q[4], q[1]]);
+                // Naib Johan (2) lwn Tempat Ke-3 (3) — silang kumpulan terjamin
+                r16matches.push(Math.random() < 0.5 ? [q[2], q[3]] : [q[3], q[2]]);
+            });
+
+            let p16full = { r16matches };
+            saveState("kbttc_undian_p16full", p16full);
+            clearState("kbttc_undian_matches");
+
+            setBtnLoading(btn, false);
+            renderPusingan16FullUI();
         }, 5000);
     }
 
