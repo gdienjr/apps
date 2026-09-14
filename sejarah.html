@@ -66,6 +66,55 @@ body{
 }
 @keyframes blink{0%{opacity:.35}50%{opacity:1}100%{opacity:.35}}
 .updated-txt{font-size:11.5px;color:var(--muted)}
+.filter-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:16px;
+  padding:10px 12px;
+  background:#f3f7fc;
+  border:1px solid var(--border);
+  border-radius:12px;
+  font-size:13px;
+  font-weight:700;
+  color:var(--ink);
+}
+.filter-row select{
+  flex:1;
+  min-width:180px;
+  padding:9px 11px;
+  border:1px solid #cfd8e5;
+  border-radius:10px;
+  font:13.5px/1.4 inherit;
+  color:var(--ink);
+  background:#fff;
+  outline:none;
+}
+.jenis-group{margin-bottom:20px}
+.jenis-group:last-child{margin-bottom:0}
+.jenis-heading{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-size:14px;
+  font-weight:800;
+  color:var(--primary2);
+  background:linear-gradient(135deg,#eaf2fe,#f6f9ff);
+  border:1px solid rgba(23,105,224,.18);
+  border-radius:10px;
+  padding:9px 13px;
+  margin-bottom:10px;
+}
+.jenis-count{
+  font-size:11.5px;
+  font-weight:700;
+  color:var(--muted);
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:999px;
+  padding:2px 9px;
+}
 .panel{
   background:var(--card);
   border:1px solid var(--border);
@@ -312,6 +361,12 @@ li.eliminated{opacity:.5;text-decoration:line-through}
 
     <div class="panel" id="listPanel">
         <h2>Senarai Kejohanan Lepas</h2>
+        <div class="filter-row" id="filterRow" style="display:none;">
+            🏷️ Tapis ikut Jenis:
+            <select id="jenisFilterSelect" onchange="renderHistoryList()">
+                <option value="">-- Semua Jenis --</option>
+            </select>
+        </div>
         <div id="historyList"><div class="empty-msg">Memuatkan senarai...</div></div>
     </div>
 
@@ -337,6 +392,8 @@ li.eliminated{opacity:.5;text-decoration:line-through}
 </div>
 
 <script>
+let allHistoryItems = [];
+
 async function loadHistoryList() {
     if (!apiReady()) {
         document.getElementById("sourceTxt").innerText = "⚠️ API_URL belum ditetapkan";
@@ -347,14 +404,64 @@ async function loadHistoryList() {
         let res = await fetch(`${API_URL}?action=history_list`, { cache: "no-store" });
         let list = await res.json();
         document.getElementById("sourceTxt").innerText = "🌐 Disambung ke Server";
+        allHistoryItems = list;
 
         if (!list.length) {
+            document.getElementById("filterRow").style.display = "none";
             document.getElementById("historyList").innerHTML = "<div class='empty-msg'>Belum ada rekod kejohanan lepas. Rekod akan tersimpan bila admin tekan \"Reset Semua Data\" dan pilih untuk simpan.</div>";
             return;
         }
 
-        let html = "";
+        // Senarai jenis unik (ikut susunan rekod terkini dahulu) untuk dropdown penapis.
+        let jenisSeen = [];
         list.forEach(item => {
+            let j = item.jenis || "Lain-lain";
+            if (!jenisSeen.includes(j)) jenisSeen.push(j);
+        });
+        jenisSeen.sort((a, b) => a.localeCompare(b, "ms"));
+
+        let selHtml = `<option value="">-- Semua Jenis (${list.length} rekod) --</option>`;
+        jenisSeen.forEach(j => {
+            let count = list.filter(it => (it.jenis || "Lain-lain") === j).length;
+            selHtml += `<option value="${escapeHtml(j)}">${escapeHtml(j)} (${count} rekod)</option>`;
+        });
+        document.getElementById("jenisFilterSelect").innerHTML = selHtml;
+        document.getElementById("filterRow").style.display = jenisSeen.length > 1 ? "flex" : "none";
+
+        renderHistoryList();
+    } catch (err) {
+        document.getElementById("sourceTxt").innerText = "📴 Gagal hubungi Google Sheet";
+        document.getElementById("historyList").innerHTML = "<div class='empty-msg'>Gagal muatkan senarai sejarah. Semak sambungan internet.</div>";
+    }
+}
+
+// Papar senarai, dikumpulkan ikut Jenis Kejohanan (kumpulan dengan rekod
+// TERKINI muncul dahulu, sebab senarai asal dari server memang tersusun
+// dari terbaru ke terlama). Kalau ada penapis jenis dipilih, kumpulan lain
+// disembunyikan sepenuhnya.
+function renderHistoryList() {
+    let filterVal = document.getElementById("jenisFilterSelect").value;
+    let list = allHistoryItems;
+    if (filterVal) list = list.filter(item => (item.jenis || "Lain-lain") === filterVal);
+
+    if (!list.length) {
+        document.getElementById("historyList").innerHTML = "<div class='empty-msg'>Tiada rekod untuk jenis kejohanan ini.</div>";
+        return;
+    }
+
+    let groups = {};
+    let order = [];
+    list.forEach(item => {
+        let j = item.jenis || "Lain-lain";
+        if (!groups[j]) { groups[j] = []; order.push(j); }
+        groups[j].push(item);
+    });
+
+    let html = "";
+    order.forEach(j => {
+        html += `<div class="jenis-group">
+            <div class="jenis-heading"><span>🏷️ ${escapeHtml(j)}</span><span class="jenis-count">${groups[j].length} rekod</span></div>`;
+        groups[j].forEach(item => {
             let dt = item.timestamp ? new Date(item.timestamp) : null;
             let dateStr = dt ? dt.toLocaleString("ms-MY") : "";
             html += `<div class="history-item" onclick="openHistory('${item.id}', '${escapeHtml(item.label).replace(/'/g, "\\'")}')">
@@ -362,11 +469,9 @@ async function loadHistoryList() {
                 <div class="h-arrow">›</div>
             </div>`;
         });
-        document.getElementById("historyList").innerHTML = html;
-    } catch (err) {
-        document.getElementById("sourceTxt").innerText = "📴 Gagal hubungi Google Sheet";
-        document.getElementById("historyList").innerHTML = "<div class='empty-msg'>Gagal muatkan senarai sejarah. Semak sambungan internet.</div>";
-    }
+        html += `</div>`;
+    });
+    document.getElementById("historyList").innerHTML = html;
 }
 
 async function openHistory(id, label) {

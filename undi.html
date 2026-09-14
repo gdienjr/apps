@@ -1415,16 +1415,30 @@ document.addEventListener("click", function(e){
         if (!confirm("Padam semua data (nama pair, grouping, keputusan, carta kalah mati)? Tindakan ini tidak boleh diundur.")) return;
 
         if (apiReady()) {
+            let defaultJenis = "";
+            try {
+                defaultJenis = JSON.parse(localStorage.getItem("kbttc_undian_title_base") || "\"\"");
+            } catch (e) {
+                defaultJenis = localStorage.getItem("kbttc_undian_title_base") || "";
+            }
+
             let label = prompt(
                 "Nama kejohanan ini untuk disimpan dalam Sejarah (kosongkan & OK untuk skip simpan):",
                 "Kejohanan " + new Date().toLocaleDateString("ms-MY")
             );
             if (label !== null && label.trim() !== "") {
+                let jenis = prompt(
+                    "Jenis kejohanan (untuk kumpulan rekod dalam Sejarah, contoh: \"Liga KBTTC\", \"Kejohanan Terbuka\"):",
+                    defaultJenis || "Lain-lain"
+                );
+                if (jenis === null) jenis = defaultJenis;
+                jenis = (jenis || "").trim() || "Lain-lain";
+
                 try {
                     await fetch(API_URL, {
                         method: "POST",
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({ action: "archive", label: label.trim() })
+                        body: JSON.stringify({ action: "archive", label: label.trim(), jenis: jenis })
                     });
                 } catch (err) {
                     alert("Gagal simpan ke Sejarah (semak sambungan internet). Reset dibatalkan supaya data tak hilang.");
