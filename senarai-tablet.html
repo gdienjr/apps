@@ -109,9 +109,70 @@ html,body{
   text-align:center;
   padding:40px 10px;
 }
+
+/* ===== Skrin Log Masuk Admin ===== */
+.auth-gate{
+  position:fixed;
+  inset:0;
+  background:linear-gradient(160deg,#0d1830,#1b2f52);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+  padding:20px;
+}
+.auth-gate.show{display:flex}
+.auth-card{
+  background:#fff;
+  border-radius:20px;
+  padding:32px 28px;
+  max-width:340px;
+  width:100%;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+}
+.auth-card h2{margin:0 0 6px;font-size:20px;color:var(--primary2)}
+.auth-card p{margin:0 0 18px;font-size:13px;color:var(--muted);line-height:1.5}
+.auth-card input{
+  width:100%;
+  padding:12px 14px;
+  border:1px solid #cfd8e5;
+  border-radius:12px;
+  font-size:16px;
+  text-align:center;
+  outline:none;
+  margin-bottom:10px;
+  box-sizing:border-box;
+}
+.auth-card input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(11,159,110,.12)}
+.auth-error{color:#c0392b;font-size:12.5px;font-weight:700;min-height:1.3em;margin-bottom:4px}
+.auth-card button{
+  width:100%;
+  background:var(--primary);
+  color:#fff;
+  border:none;
+  border-radius:12px;
+  padding:12px;
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
+
+<div class="auth-gate" id="authGate">
+    <div class="auth-card">
+        <h2>🔒 Akses Admin Diperlukan</h2>
+        <p>Sistem ni khas untuk urusetia KBTTC. Sila masukkan kata laluan untuk teruskan.</p>
+        <form id="authForm">
+            <input type="password" id="authPwInput" placeholder="Kata laluan" autocomplete="off" required>
+            <div class="auth-error" id="authError"></div>
+            <button type="submit" id="authSubmitBtn">🔓 Masuk</button>
+        </form>
+    </div>
+</div>
+
 
 <div class="page">
     <div class="top-bar">
@@ -127,6 +188,64 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwk6IQCYNyNhfPIdMgsoFlU
 
 function apiReady() {
     return API_URL && API_URL.startsWith("http");
+}
+
+// ====== Kata laluan admin (disemak di server dalam code.gs) ======
+const ADMIN_PW_KEY = "kbttc_admin_pw";
+
+function getStoredPw() {
+    return localStorage.getItem(ADMIN_PW_KEY) || "";
+}
+
+async function verifyPassword(pw) {
+    if (!apiReady()) return true;
+    try {
+        let res = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ action: "auth_check", password: pw })
+        });
+        let data = await res.json();
+        return !!data.ok;
+    } catch (err) {
+        return false;
+    }
+}
+
+function showLoginGate() {
+    return new Promise((resolve) => {
+        let overlay = document.getElementById("authGate");
+        overlay.classList.add("show");
+        document.getElementById("authForm").onsubmit = async (e) => {
+            e.preventDefault();
+            let pwInput = document.getElementById("authPwInput");
+            let errEl = document.getElementById("authError");
+            let btn = document.getElementById("authSubmitBtn");
+            btn.disabled = true;
+            errEl.innerText = "Menyemak...";
+            let ok = await verifyPassword(pwInput.value);
+            if (ok) {
+                localStorage.setItem(ADMIN_PW_KEY, pwInput.value);
+                overlay.classList.remove("show");
+                resolve();
+            } else {
+                errEl.innerText = "❌ Kata laluan salah. Sila cuba lagi.";
+                btn.disabled = false;
+                pwInput.value = "";
+                pwInput.focus();
+            }
+        };
+        document.getElementById("authPwInput").focus();
+    });
+}
+
+async function ensureAuth() {
+    let stored = getStoredPw();
+    if (stored) {
+        let ok = await verifyPassword(stored);
+        if (ok) return;
+    }
+    await showLoginGate();
 }
 
 function escapeHtml(s) {
@@ -167,7 +286,7 @@ function pushBayaranToSheet() {
         fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({ key: "kbttc_undian_bayaran", value: bayaranState })
+            body: JSON.stringify({ key: "kbttc_undian_bayaran", value: bayaranState, password: getStoredPw() })
         }).catch(err => console.warn("Gagal sync ke Google Sheet:", err))
     ).finally(() => {
         pendingSyncCount--;
@@ -230,8 +349,10 @@ async function loadState() {
     }
 }
 
-loadState();
-setInterval(loadState, 8000);
+ensureAuth().then(() => {
+    loadState();
+    setInterval(loadState, 8000);
+});
 </script>
 
 </body>

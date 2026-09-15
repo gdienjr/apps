@@ -135,6 +135,43 @@ textarea:focus{
   box-shadow:0 0 0 4px rgba(23,105,224,.10);
   background:#fff;
 }
+
+/* ===== Skrin Log Masuk Admin ===== */
+.auth-gate{
+  position:fixed;
+  inset:0;
+  background:linear-gradient(160deg,#0d1830,#1b2f52);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+  padding:20px;
+}
+.auth-gate.show{display:flex}
+.auth-card{
+  background:#fff;
+  border-radius:20px;
+  padding:32px 28px;
+  max-width:340px;
+  width:100%;
+  text-align:center;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+}
+.auth-card h2{margin:0 0 6px;font-size:20px;color:var(--primary2)}
+.auth-card p{margin:0 0 18px;font-size:13px;color:var(--muted);line-height:1.5}
+.auth-card input{
+  width:100%;
+  padding:12px 14px;
+  border:1px solid #cfd8e5;
+  border-radius:12px;
+  font-size:16px;
+  text-align:center;
+  outline:none;
+  margin-bottom:10px;
+  box-sizing:border-box;
+}
+.auth-card input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(23,105,224,.12)}
+.auth-error{color:#c0392b;font-size:12.5px;font-weight:700;min-height:1.3em;margin-bottom:4px}
 button{
   appearance:none;
   width:100%;
@@ -896,6 +933,19 @@ button.is-loading::before{display:none}
 </head>
 <body>
 
+<div class="auth-gate" id="authGate">
+    <div class="auth-card">
+        <h2>🔒 Akses Admin Diperlukan</h2>
+        <p>Sistem ni khas untuk urusetia KBTTC. Sila masukkan kata laluan untuk teruskan.</p>
+        <form id="authForm">
+            <input type="password" id="authPwInput" placeholder="Kata laluan" autocomplete="off" required>
+            <div class="auth-error" id="authError"></div>
+            <button type="submit" id="authSubmitBtn">🔓 Masuk</button>
+        </form>
+    </div>
+</div>
+
+
 <div class="container">
     <h4>🏓 KBTTC-Sistem Game Pingpong</h4>
     <div class="subtitle"></div>
@@ -1105,6 +1155,70 @@ document.addEventListener("click", function(e){
         return API_URL && API_URL.startsWith("http");
     }
 
+    // ====== Kata laluan admin (disemak di server dalam code.gs) ======
+    const ADMIN_PW_KEY = "kbttc_admin_pw";
+
+    function getStoredPw() {
+        return localStorage.getItem(ADMIN_PW_KEY) || "";
+    }
+
+    // Semak kata laluan terus dengan server (action "auth_check" tak
+    // buat sebarang tulisan data, cuma sahkan sahaja).
+    async function verifyPassword(pw) {
+        if (!apiReady()) return true; // tiada backend — mod tempatan sahaja
+        try {
+            let res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: "auth_check", password: pw })
+            });
+            let data = await res.json();
+            return !!data.ok;
+        } catch (err) {
+            return false;
+        }
+    }
+
+    function showLoginGate() {
+        return new Promise((resolve) => {
+            let overlay = document.getElementById("authGate");
+            overlay.classList.add("show");
+            let form = document.getElementById("authForm");
+            form.onsubmit = async (e) => {
+                e.preventDefault();
+                let pwInput = document.getElementById("authPwInput");
+                let errEl = document.getElementById("authError");
+                let btn = document.getElementById("authSubmitBtn");
+                btn.disabled = true;
+                errEl.innerText = "Menyemak...";
+                let ok = await verifyPassword(pwInput.value);
+                if (ok) {
+                    localStorage.setItem(ADMIN_PW_KEY, pwInput.value);
+                    overlay.classList.remove("show");
+                    resolve();
+                } else {
+                    errEl.innerText = "❌ Kata laluan salah. Sila cuba lagi.";
+                    btn.disabled = false;
+                    pwInput.value = "";
+                    pwInput.focus();
+                }
+            };
+            document.getElementById("authPwInput").focus();
+        });
+    }
+
+    // Dipanggil di awal window.onload — sekat penggunaan sistem sehingga
+    // kata laluan admin disahkan. Kalau kata laluan tersimpan (peranti
+    // ini pernah log masuk sebelum ini) masih sah, terus masuk tanpa tanya.
+    async function ensureAuth() {
+        let stored = getStoredPw();
+        if (stored) {
+            let ok = await verifyPassword(stored);
+            if (ok) return;
+        }
+        await showLoginGate();
+    }
+
     // Baris gilir (queue) supaya setiap POST ke Google Sheet DIJAMIN
     // dihantar & selesai secara bergiliran, satu lepas satu — bukan
     // "tembak sekaligus" (fire-and-forget) seperti dulu.
@@ -1137,7 +1251,7 @@ document.addEventListener("click", function(e){
             fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ key: key, value: value })
+                body: JSON.stringify({ key: key, value: value, password: getStoredPw() })
             }).catch(err => console.warn("Gagal sync ke Google Sheet:", err))
         ).finally(() => {
             pendingSyncCount--;
@@ -1384,7 +1498,7 @@ document.addEventListener("click", function(e){
                     await fetch(API_URL, {
                         method: "POST",
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({ action: "archive", label: label.trim() })
+                        body: JSON.stringify({ action: "archive", label: label.trim(), password: getStoredPw() })
                     });
                 } catch (err) {
                     alert("Gagal simpan ke Sejarah (semak sambungan internet). Reset dibatalkan supaya data tak hilang.");
@@ -1421,6 +1535,8 @@ document.addEventListener("click", function(e){
     }
 
     window.onload = async function() {
+        await ensureAuth();
+
         if (apiReady()) {
             document.getElementById("syncStatus").innerText = "🔄 Sync data dari Server...";
             let ok = await pullFromSheet();
