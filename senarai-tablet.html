@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Senarai Semakan Peserta — KBTTC</title>
+<link rel="icon" href="icon-192.png" type="image/png">
+<style>
+:root{
+  --bg:#eef7f3;
+  --card:#ffffff;
+  --ink:#172033;
+  --muted:#6b778c;
+  --primary:#0b9f6e;
+  --primary2:#087a55;
+  --border:#dfe6ef;
+}
+*{box-sizing:border-box}
+html,body{
+  height:100%;
+  margin:0;
+  overflow:hidden;
+  font-family:Inter,"Segoe UI",Tahoma,Arial,sans-serif;
+  color:var(--ink);
+  background:var(--bg);
+}
+.page{
+  height:100vh;
+  width:100vw;
+  display:flex;
+  flex-direction:column;
+  padding:14px 20px 16px;
+}
+.top-bar{
+  flex:0 0 auto;
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:10px;
+  border-bottom:2px solid var(--primary);
+  padding-bottom:8px;
+}
+.top-bar h1{
+  margin:0;
+  font-size:clamp(18px,2.4vw,26px);
+  color:var(--primary2);
+}
+.stats{
+  font-size:clamp(13px,1.5vw,17px);
+  font-weight:700;
+  color:var(--muted);
+}
+.stats b{color:var(--primary2)}
+.sync-txt{font-size:11px;color:var(--muted)}
+.checklist{
+  flex:1 1 auto;
+  min-height:0;
+  columns:230px;
+  column-gap:14px;
+  column-fill:auto;
+  overflow-y:auto;
+}
+.item{
+  break-inside:avoid;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:7px 9px;
+  margin-bottom:5px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
+}
+.item.is-checked{
+  background:rgba(11,159,110,.10);
+  border-color:rgba(11,159,110,.4);
+}
+.item .num{
+  flex:0 0 auto;
+  width:26px;
+  text-align:right;
+  font-weight:800;
+  font-size:clamp(12px,1.3vw,15px);
+  color:var(--muted);
+}
+.item.is-checked .num{color:var(--primary2)}
+.item .name{
+  flex:1 1 auto;
+  min-width:0;
+  font-size:clamp(12.5px,1.4vw,16px);
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.item.is-checked .name{color:var(--primary2);text-decoration:line-through;text-decoration-color:rgba(11,159,110,.5)}
+.item input[type=checkbox]{
+  flex:0 0 auto;
+  width:26px;
+  height:26px;
+  accent-color:var(--primary);
+  cursor:pointer;
+}
+.empty-msg{
+  color:var(--muted);
+  font-size:16px;
+  text-align:center;
+  padding:40px 10px;
+}
+</style>
+</head>
+<body>
+
+<div class="page">
+    <div class="top-bar">
+        <h1>📝 Senarai Semakan Peserta</h1>
+        <div class="stats" id="statsTxt">Memuatkan...</div>
+    </div>
+    <div class="checklist" id="checklist"><div class="empty-msg">Memuatkan senarai peserta...</div></div>
+    <div class="sync-txt" id="syncTxt"></div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbwk6IQCYNyNhfPIdMgsoFlUEYflFmXicq8zDPbJif5xkDXREoQZqgP2xMLliPy_82W27Q/exec";
+
+function apiReady() {
+    return API_URL && API_URL.startsWith("http");
+}
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+let pesertaList = [];
+let personList = [];
+let bayaranState = {};
+
+// Pecahkan setiap entri ("Muiz/Samad") kepada individu berasingan —
+// nama pasangan tidak dipaparkan di sini, cuma nama sendiri.
+function buildPersonList(list) {
+    let out = [];
+    list.forEach((entry, ei) => {
+        let parts = entry.split("/").map(s => s.trim()).filter(s => s.length > 0);
+        if (parts.length === 0) return;
+        parts.forEach((nm, pi) => {
+            out.push({ key: ei + "-" + pi, name: nm });
+        });
+    });
+    return out;
+}
+
+let syncQueue = Promise.resolve();
+let pendingSyncCount = 0;
+
+function updateSyncTxt() {
+    let el = document.getElementById("syncTxt");
+    el.innerText = pendingSyncCount > 0 ? "🔄 Menghantar tanda ke server..." : "";
+}
+
+function pushBayaranToSheet() {
+    if (!apiReady()) return Promise.resolve();
+    pendingSyncCount++;
+    updateSyncTxt();
+    syncQueue = syncQueue.then(() =>
+        fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ key: "kbttc_undian_bayaran", value: bayaranState })
+        }).catch(err => console.warn("Gagal sync ke Google Sheet:", err))
+    ).finally(() => {
+        pendingSyncCount--;
+        updateSyncTxt();
+    });
+    return syncQueue;
+}
+
+function toggleTanda(key) {
+    bayaranState[key] = !bayaranState[key];
+    localStorage.setItem("kbttc_undian_bayaran", JSON.stringify(bayaranState));
+    pushBayaranToSheet();
+    render();
+}
+
+function render() {
+    let wrap = document.getElementById("checklist");
+    if (!personList.length) {
+        wrap.innerHTML = "<div class='empty-msg'>Tiada senarai peserta lagi. Sila simpan Senarai Nama di undi.html dahulu.</div>";
+        document.getElementById("statsTxt").innerText = "";
+        return;
+    }
+
+    let checkedCount = personList.filter(p => bayaranState[p.key]).length;
+    document.getElementById("statsTxt").innerHTML = `Jumlah: <b>${personList.length}</b> &nbsp;•&nbsp; Sudah Ditanda: <b>${checkedCount}</b> &nbsp;•&nbsp; Baki: <b>${personList.length - checkedCount}</b>`;
+
+    let html = "";
+    personList.forEach((person, i) => {
+        let checked = !!bayaranState[person.key];
+        html += `<div class="item ${checked ? "is-checked" : ""}">
+            <span class="num">${i + 1}.</span>
+            <span class="name">${escapeHtml(person.name)}</span>
+            <input type="checkbox" ${checked ? "checked" : ""} onchange="toggleTanda('${person.key}')">
+        </div>`;
+    });
+    wrap.innerHTML = html;
+}
+
+async function loadState() {
+    if (!apiReady()) {
+        pesertaList = JSON.parse(localStorage.getItem("kbttc_undian_peserta") || "[]");
+        bayaranState = JSON.parse(localStorage.getItem("kbttc_undian_bayaran") || "{}");
+        personList = buildPersonList(pesertaList);
+        render();
+        return;
+    }
+    try {
+        let res = await fetch(API_URL, { cache: "no-store" });
+        let data = await res.json();
+        pesertaList = data.kbttc_undian_peserta || [];
+        bayaranState = data.kbttc_undian_bayaran || {};
+        localStorage.setItem("kbttc_undian_bayaran", JSON.stringify(bayaranState));
+        personList = buildPersonList(pesertaList);
+        render();
+    } catch (err) {
+        pesertaList = JSON.parse(localStorage.getItem("kbttc_undian_peserta") || "[]");
+        bayaranState = JSON.parse(localStorage.getItem("kbttc_undian_bayaran") || "{}");
+        personList = buildPersonList(pesertaList);
+        render();
+    }
+}
+
+loadState();
+setInterval(loadState, 8000);
+</script>
+
+</body>
+</html>

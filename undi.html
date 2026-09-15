@@ -130,53 +130,6 @@ textarea{
   box-shadow:0 0 0 4px rgba(23,105,224,.10);
   background:#fff;
 }
-select.title-input{
-  appearance:auto;
-  cursor:pointer;
-}
-.preset-row{
-  display:flex;
-  gap:8px;
-  margin-bottom:10px;
-}
-.preset-row select{
-  flex:1;
-  min-width:0;
-}
-.preset-row .btn-preset-del{
-  width:auto;
-  flex:0 0 auto;
-  margin-top:0;
-  padding:0 14px;
-  font-size:12.5px;
-  background:linear-gradient(135deg,#e06a6a,#e88a8a);
-  box-shadow:0 7px 16px rgba(224,106,106,.20);
-}
-.preset-row .btn-preset-del:hover{box-shadow:0 10px 20px rgba(224,106,106,.24)}
-.date-row{
-  display:flex;
-  align-items:center;
-  gap:9px;
-  margin-top:9px;
-  font-size:13px;
-  color:var(--muted);
-  font-weight:600;
-}
-.date-row input[type="date"]{
-  flex:0 0 auto;
-  padding:10px 12px;
-  border:1px solid #cfd8e5;
-  border-radius:11px;
-  font:14px/1.5 inherit;
-  color:var(--ink);
-  background:#fbfcfe;
-  outline:none;
-}
-.date-row input[type="date"]:focus{
-  border-color:var(--primary);
-  box-shadow:0 0 0 4px rgba(23,105,224,.10);
-  background:#fff;
-}
 textarea:focus{
   border-color:var(--primary);
   box-shadow:0 0 0 4px rgba(23,105,224,.10);
@@ -395,6 +348,30 @@ ol.numbered-list li::before{
 .btn-history{
   display:inline-block;
   background:var(--gold);
+  color:#fff;
+  border-radius:9px;
+  padding:8px 14px;
+  font-size:13px;
+  font-weight:700;
+  text-decoration:none;
+  float:right;
+  margin-right:8px;
+}
+.btn-bayaran{
+  display:inline-block;
+  background:var(--success);
+  color:#fff;
+  border-radius:9px;
+  padding:8px 14px;
+  font-size:13px;
+  font-weight:700;
+  text-decoration:none;
+  float:right;
+  margin-right:8px;
+}
+.btn-tablet{
+  display:inline-block;
+  background:linear-gradient(135deg,#7c3aed,#a78bfa);
   color:#fff;
   border-radius:9px;
   padding:8px 14px;
@@ -925,6 +902,8 @@ button.is-loading::before{display:none}
     <div id="syncStatus" class="sync-status no-print"></div>
     <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ View(Live)</a>
     <a href="sejarah.html" target="_blank" class="btn-history no-print">📜 History</a>
+    <a href="bayaran.html" target="_blank" class="btn-bayaran no-print">💰 Bayaran Yuran</a>
+    <a href="senarai-tablet.html" target="_blank" class="btn-tablet no-print">📝 Senarai Tablet</a>
     <button class="btn-reset no-print" onclick="resetSemua()">🗑️ Reset Semua Data</button>
 
     <!-- Format Kejohanan: 4 Kumpulan atau 2 Kumpulan -->
@@ -940,18 +919,8 @@ button.is-loading::before{display:none}
     <!-- Tajuk Kejohanan -->
     <div class="stage no-print" id="titleStage">
         <h4>🏷️ Nama Game</h4>
-        <p style="margin:-4px 0 10px;font-size:12.5px;color:var(--muted);">Pilih nama kejohanan yang selalu diguna dari senarai, atau taip nama baru. Tarikh akan digabung secara automatik.</p>
-        <div class="preset-row">
-            <select id="titlePresetSelect" class="title-input" onchange="pilihTajukPreset()">
-                <option value="">-- Pilih Nama Kejohanan Tersimpan --</option>
-            </select>
-            <button type="button" class="btn-preset-del" onclick="padamTajukPreset()">🗑️ Padam</button>
-        </div>
-        <input type="text" id="tournamentTitleInput" placeholder="Contoh: Kejohanan Pingpong Beregu KBTTC" class="title-input">
-        <div class="date-row">
-            📅 Tarikh Kejohanan:
-            <input type="date" id="tournamentDateInput" onchange="simpanTajuk()">
-        </div>
+        <p></p>
+        <input type="text" id="tournamentTitleInput" placeholder="Contoh: Kejohanan Pingpong Beregu KBTTC 2026" class="title-input">
         <button onclick="simpanTajuk()">💾 Simpan Nama Game</button>
         <span id="titleSavedStatus" class="saved-msg"></span>
     </div>
@@ -959,13 +928,7 @@ button.is-loading::before{display:none}
     <!-- Pesanan Pengurus Perlawanan (Ticker) -->
     <div class="stage no-print" id="announcementStage">
         <h3>📢 Pesanan Pengurus Perlawanan</h3>
-        <p style="margin:-4px 0 10px;font-size:12.5px;color:var(--muted);">Pilih pesanan yang selalu diguna dari senarai, atau taip pesanan baru.</p>
-        <div class="preset-row">
-            <select id="announcementPresetSelect" class="title-input" onchange="pilihPesananPreset()">
-                <option value="">-- Pilih Pesanan Tersimpan --</option>
-            </select>
-            <button type="button" class="btn-preset-del" onclick="padamPesananPreset()">🗑️ Padam</button>
-        </div>
+        <p></p>
         <input type="text" id="announcementInput" placeholder="Contoh: Sila hadir ke gelanggang 2 dalam masa 5 minit." class="title-input">
         <button onclick="simpanPesanan()">💾 Simpan Pesanan</button>
         <span id="announcementSavedStatus" class="saved-msg"></span>
@@ -1102,9 +1065,6 @@ document.addEventListener("click", function(e){
 
     let slotJuara = {};
     let currentGroups = {};
-    // Senarai nama game & pesanan yang pernah disimpan (untuk dropdown pilihan).
-    let titlePresets = [];
-    let announcementPresets = [];
     // Format kejohanan semasa: "4" = 4 Kumpulan (A-D), "2" = 2 Kumpulan (A-B)
     let tournamentMode = "4";
     // Untuk Mod 4 Kumpulan sahaja: "3" = 3 Terbaik/kumpulan (Juara terus ke
@@ -1201,7 +1161,7 @@ document.addEventListener("click", function(e){
         try {
             let res = await fetch(API_URL, { cache: "no-store" });
             let data = await res.json();
-            let keys = ["kbttc_undian_title", "kbttc_undian_title_base", "kbttc_undian_title_date", "kbttc_undian_title_presets", "kbttc_undian_announcement", "kbttc_undian_announcement_presets", "kbttc_undian_mode", "kbttc_undian_qualifycount", "kbttc_undian_peserta", "kbttc_undian_groups", "kbttc_undian_ranks", "kbttc_undian_slotjuara", "kbttc_undian_p16", "kbttc_undian_p16full", "kbttc_undian_qf2", "kbttc_undian_matches"];
+            let keys = ["kbttc_undian_title", "kbttc_undian_announcement", "kbttc_undian_mode", "kbttc_undian_qualifycount", "kbttc_undian_peserta", "kbttc_undian_groups", "kbttc_undian_ranks", "kbttc_undian_slotjuara", "kbttc_undian_p16", "kbttc_undian_p16full", "kbttc_undian_qf2", "kbttc_undian_matches"];
             keys.forEach(k => {
                 if (data[k] !== undefined && data[k] !== null) {
                     localStorage.setItem(k, JSON.stringify(data[k]));
@@ -1415,30 +1375,16 @@ document.addEventListener("click", function(e){
         if (!confirm("Padam semua data (nama pair, grouping, keputusan, carta kalah mati)? Tindakan ini tidak boleh diundur.")) return;
 
         if (apiReady()) {
-            let defaultJenis = "";
-            try {
-                defaultJenis = JSON.parse(localStorage.getItem("kbttc_undian_title_base") || "\"\"");
-            } catch (e) {
-                defaultJenis = localStorage.getItem("kbttc_undian_title_base") || "";
-            }
-
             let label = prompt(
                 "Nama kejohanan ini untuk disimpan dalam Sejarah (kosongkan & OK untuk skip simpan):",
                 "Kejohanan " + new Date().toLocaleDateString("ms-MY")
             );
             if (label !== null && label.trim() !== "") {
-                let jenis = prompt(
-                    "Jenis kejohanan (untuk kumpulan rekod dalam Sejarah, contoh: \"Liga KBTTC\", \"Kejohanan Terbuka\"):",
-                    defaultJenis || "Lain-lain"
-                );
-                if (jenis === null) jenis = defaultJenis;
-                jenis = (jenis || "").trim() || "Lain-lain";
-
                 try {
                     await fetch(API_URL, {
                         method: "POST",
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({ action: "archive", label: label.trim(), jenis: jenis })
+                        body: JSON.stringify({ action: "archive", label: label.trim() })
                     });
                 } catch (err) {
                     alert("Gagal simpan ke Sejarah (semak sambungan internet). Reset dibatalkan supaya data tak hilang.");
@@ -1499,27 +1445,14 @@ document.addEventListener("click", function(e){
 
         updateModeUI();
 
-        let savedTitleBase = localStorage.getItem("kbttc_undian_title_base");
-        if (savedTitleBase) {
+        let savedTitle = localStorage.getItem("kbttc_undian_title");
+        if (savedTitle) {
             try {
-                document.getElementById("tournamentTitleInput").value = JSON.parse(savedTitleBase);
+                document.getElementById("tournamentTitleInput").value = JSON.parse(savedTitle);
             } catch (e) {
-                document.getElementById("tournamentTitleInput").value = savedTitleBase;
+                document.getElementById("tournamentTitleInput").value = savedTitle;
             }
         }
-
-        let savedTitleDate = localStorage.getItem("kbttc_undian_title_date");
-        let titleDateVal = todayDateStr();
-        if (savedTitleDate) {
-            try { titleDateVal = JSON.parse(savedTitleDate); } catch (e) { titleDateVal = savedTitleDate; }
-        }
-        document.getElementById("tournamentDateInput").value = titleDateVal;
-
-        let savedTitlePresets = localStorage.getItem("kbttc_undian_title_presets");
-        if (savedTitlePresets) {
-            try { titlePresets = JSON.parse(savedTitlePresets) || []; } catch (e) { titlePresets = []; }
-        }
-        renderTitlePresetOptions();
 
         let savedAnnouncement = localStorage.getItem("kbttc_undian_announcement");
         if (savedAnnouncement) {
@@ -1529,12 +1462,6 @@ document.addEventListener("click", function(e){
                 document.getElementById("announcementInput").value = savedAnnouncement;
             }
         }
-
-        let savedAnnouncementPresets = localStorage.getItem("kbttc_undian_announcement_presets");
-        if (savedAnnouncementPresets) {
-            try { announcementPresets = JSON.parse(savedAnnouncementPresets) || []; } catch (e) { announcementPresets = []; }
-        }
-        renderAnnouncementPresetOptions();
 
         let savedData = localStorage.getItem("pingpong_pairs");
         if (savedData) {
@@ -1629,118 +1556,17 @@ document.addEventListener("click", function(e){
         saveState("kbttc_undian_peserta", pesertaList);
     }
 
-    // ====== Preset Nama Game (dropdown, elak taip/copy-paste berulang) ======
-    function todayDateStr() {
-        let d = new Date();
-        let m = String(d.getMonth() + 1).padStart(2, "0");
-        let day = String(d.getDate()).padStart(2, "0");
-        return `${d.getFullYear()}-${m}-${day}`;
-    }
-
-    function formatDateMY(yyyyMmDd) {
-        if (!yyyyMmDd) return "";
-        let [y, m, d] = yyyyMmDd.split("-");
-        return `${d}/${m}/${y}`;
-    }
-
-    function renderTitlePresetOptions() {
-        let sel = document.getElementById("titlePresetSelect");
-        let html = `<option value="">-- Pilih Nama Kejohanan Tersimpan --</option>`;
-        titlePresets.forEach((name, i) => {
-            html += `<option value="${i}">${escapeHtml(name)}</option>`;
-        });
-        sel.innerHTML = html;
-    }
-
-    function pilihTajukPreset() {
-        let sel = document.getElementById("titlePresetSelect");
-        if (sel.value === "") return;
-        let name = titlePresets[parseInt(sel.value)];
-        if (name === undefined) return;
-        document.getElementById("tournamentTitleInput").value = name;
-        simpanTajuk();
-    }
-
-    function padamTajukPreset() {
-        let sel = document.getElementById("titlePresetSelect");
-        if (sel.value === "") {
-            alert("Sila pilih satu nama dalam senarai dahulu untuk dipadam.");
-            return;
-        }
-        let idx = parseInt(sel.value);
-        let name = titlePresets[idx];
-        if (!confirm(`Padam "${name}" daripada senarai pilihan? (Nama Game semasa tidak akan berubah)`)) return;
-        titlePresets.splice(idx, 1);
-        saveState("kbttc_undian_title_presets", titlePresets);
-        renderTitlePresetOptions();
-    }
-
     function simpanTajuk() {
-        let baseVal = document.getElementById("tournamentTitleInput").value.trim();
-        let dateEl = document.getElementById("tournamentDateInput");
-        if (!dateEl.value) dateEl.value = todayDateStr();
-        let dateVal = dateEl.value;
-
-        saveState("kbttc_undian_title_base", baseVal);
-        saveState("kbttc_undian_title_date", dateVal);
-
-        let combined = baseVal ? `${baseVal} — ${formatDateMY(dateVal)}` : "";
-        saveState("kbttc_undian_title", combined);
-
-        if (baseVal && !titlePresets.includes(baseVal)) {
-            titlePresets.push(baseVal);
-            saveState("kbttc_undian_title_presets", titlePresets);
-            renderTitlePresetOptions();
-        }
-
+        let val = document.getElementById("tournamentTitleInput").value.trim();
+        saveState("kbttc_undian_title", val);
         let statusEl = document.getElementById("titleSavedStatus");
         statusEl.innerText = "✔ Tajuk disimpan!";
         setTimeout(() => { statusEl.innerText = ""; }, 4000);
     }
 
-    // ====== Preset Pesanan Pengurus Perlawanan (dropdown) ======
-    function renderAnnouncementPresetOptions() {
-        let sel = document.getElementById("announcementPresetSelect");
-        let html = `<option value="">-- Pilih Pesanan Tersimpan --</option>`;
-        announcementPresets.forEach((msg, i) => {
-            html += `<option value="${i}">${escapeHtml(msg)}</option>`;
-        });
-        sel.innerHTML = html;
-    }
-
-    function pilihPesananPreset() {
-        let sel = document.getElementById("announcementPresetSelect");
-        if (sel.value === "") return;
-        let msg = announcementPresets[parseInt(sel.value)];
-        if (msg === undefined) return;
-        document.getElementById("announcementInput").value = msg;
-        simpanPesanan();
-    }
-
-    function padamPesananPreset() {
-        let sel = document.getElementById("announcementPresetSelect");
-        if (sel.value === "") {
-            alert("Sila pilih satu pesanan dalam senarai dahulu untuk dipadam.");
-            return;
-        }
-        let idx = parseInt(sel.value);
-        let msg = announcementPresets[idx];
-        if (!confirm(`Padam pesanan ini daripada senarai pilihan?\n\n"${msg}"`)) return;
-        announcementPresets.splice(idx, 1);
-        saveState("kbttc_undian_announcement_presets", announcementPresets);
-        renderAnnouncementPresetOptions();
-    }
-
     function simpanPesanan() {
         let val = document.getElementById("announcementInput").value.trim();
         saveState("kbttc_undian_announcement", val);
-
-        if (val && !announcementPresets.includes(val)) {
-            announcementPresets.push(val);
-            saveState("kbttc_undian_announcement_presets", announcementPresets);
-            renderAnnouncementPresetOptions();
-        }
-
         let statusEl = document.getElementById("announcementSavedStatus");
         statusEl.innerText = val ? "✔ Pesanan disimpan!" : "✔ Ticker disembunyikan.";
         setTimeout(() => { statusEl.innerText = ""; }, 4000);

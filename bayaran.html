@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Semakan Bayaran Yuran — KBTTC</title>
+<link rel="icon" href="icon-192.png" type="image/png">
+<style>
+:root{
+  --bg:#eef7f3;
+  --card:#ffffff;
+  --ink:#172033;
+  --muted:#6b778c;
+  --primary:#0b9f6e;
+  --primary2:#087a55;
+  --danger:#c0392b;
+  --gold:#f59e0b;
+  --border:#dfe6ef;
+}
+*{box-sizing:border-box}
+html,body{
+  height:100%;
+  margin:0;
+  overflow:hidden;
+}
+body{
+  font-family:Inter,"Segoe UI",Tahoma,Arial,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(circle at 15% 0%,rgba(11,159,110,.10),transparent 28%),
+    radial-gradient(circle at 90% 10%,rgba(23,105,224,.07),transparent 25%),
+    var(--bg);
+}
+.screen{
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+  padding:10px 14px 12px;
+  gap:8px;
+}
+
+/* ===== Bar atas ===== */
+.top-bar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex:0 0 auto;
+}
+.top-bar h1{margin:0;font-size:clamp(16px,2vw,20px);color:var(--primary2)}
+.btn-back{
+  display:inline-block;
+  background:none;
+  border:1px solid var(--border);
+  color:var(--primary2);
+  border-radius:9px;
+  padding:6px 12px;
+  font-size:12.5px;
+  cursor:pointer;
+  text-decoration:none;
+  white-space:nowrap;
+}
+.updated-txt{font-size:11px;color:var(--muted);text-align:right}
+
+/* ===== Kaunter Urusetia: taip nombor ===== */
+.counter-box{
+  flex:0 0 auto;
+  background:linear-gradient(135deg,var(--primary2),var(--primary));
+  border-radius:16px;
+  padding:12px 16px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  color:#fff;
+  box-shadow:0 10px 24px rgba(11,159,110,.22);
+}
+.counter-box label{
+  font-size:12.5px;
+  font-weight:700;
+  opacity:.9;
+  white-space:nowrap;
+}
+#numberInput{
+  flex:0 0 140px;
+  font-size:clamp(22px,3vw,30px);
+  font-weight:800;
+  text-align:center;
+  padding:8px 6px;
+  border:none;
+  border-radius:10px;
+  outline:none;
+  color:var(--ink);
+}
+.counter-feedback{
+  flex:1;
+  font-size:clamp(13px,1.6vw,16px);
+  font-weight:700;
+  min-height:1.3em;
+}
+.counter-feedback.ok{color:#eaffef}
+.counter-feedback.err{color:#ffe1dc}
+
+/* ===== Statistik & kawalan ===== */
+.stats-row{
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.stat-chip{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:6px 12px;
+  font-size:12.5px;
+  font-weight:700;
+  color:var(--muted);
+  display:flex;
+  align-items:center;
+  gap:5px;
+  white-space:nowrap;
+}
+.stat-chip b{font-size:15px;color:var(--ink)}
+.stat-chip.paid b{color:var(--primary)}
+.stat-chip.unpaid b{color:var(--danger)}
+.progress-wrap{
+  flex:1;
+  min-width:80px;
+  height:9px;
+  background:#e3e9f1;
+  border-radius:999px;
+  overflow:hidden;
+}
+.progress-bar{
+  height:100%;
+  background:linear-gradient(90deg,var(--primary),#22c58e);
+  border-radius:999px;
+  transition:width .3s ease;
+}
+.search-input{
+  flex:0 0 160px;
+  padding:7px 10px;
+  border:1px solid #cfd8e5;
+  border-radius:9px;
+  font:12.5px/1.3 inherit;
+  outline:none;
+}
+.filter-btn{
+  padding:6px 10px;
+  border-radius:9px;
+  border:1px solid var(--border);
+  background:#f3f7fc;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+/* ===== Grid peserta (isi baki skrin) ===== */
+.grid-wrap{
+  flex:1 1 auto;
+  min-height:0;
+  overflow-y:auto;
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  gap:8px;
+  align-content:start;
+  padding-right:2px;
+}
+.empty-msg{color:var(--muted);font-size:14px;text-align:center;padding:24px 10px;grid-column:1/-1}
+.p-card{
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:12px;
+  padding:8px 10px;
+  cursor:pointer;
+  user-select:none;
+  transition:transform .1s ease,background .15s ease,border-color .15s ease;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-height:56px;
+}
+.p-card:active{transform:scale(.97)}
+.p-card.is-paid{
+  background:rgba(11,159,110,.10);
+  border-color:rgba(11,159,110,.5);
+}
+.p-card.flash{outline:3px solid var(--gold)}
+.p-top{display:flex;align-items:center;gap:6px}
+.p-num{
+  flex:0 0 auto;
+  min-width:22px;
+  height:22px;
+  border-radius:6px;
+  background:var(--primary2);
+  color:#fff;
+  font-size:11.5px;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 4px;
+}
+.p-card.is-paid .p-num{background:var(--primary)}
+.p-name{
+  font-size:13px;
+  font-weight:700;
+  word-break:break-word;
+  line-height:1.25;
+}
+.p-card.is-paid .p-name{color:var(--primary2)}
+.p-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.p-mark{font-size:11px;margin-left:auto}
+
+@media(max-width:600px){
+  .grid-wrap{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
+  .counter-box{flex-wrap:wrap}
+}
+</style>
+</head>
+<body>
+
+<div class="screen">
+    <div class="top-bar">
+        <a href="undi.html" class="btn-back">← Undian</a>
+        <h1>💰 Semakan Bayaran Yuran</h1>
+        <div class="updated-txt" id="sourceTxt"></div>
+    </div>
+
+    <div class="counter-box">
+        <label>NOMBOR<br>PESERTA</label>
+        <input type="number" id="numberInput" inputmode="numeric" placeholder="?" autofocus>
+        <div class="counter-feedback" id="counterFeedback">Sila taip nombor &amp; tekan Enter apabila peserta hadir di kaunter.</div>
+    </div>
+
+    <div class="stats-row">
+        <div class="stat-chip">Jumlah <b id="numTotal">0</b></div>
+        <div class="stat-chip paid">Sudah Bayar <b id="numPaid">0</b></div>
+        <div class="stat-chip unpaid">Belum Bayar <b id="numUnpaid">0</b></div>
+        <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Cari nama...">
+        <button class="filter-btn active" id="filterAll" onclick="setFilter('all')">Semua</button>
+        <button class="filter-btn" id="filterPaid" onclick="setFilter('paid')">Sudah Bayar</button>
+        <button class="filter-btn" id="filterUnpaid" onclick="setFilter('unpaid')">Belum Bayar</button>
+    </div>
+
+    <div class="grid-wrap" id="listWrap"><div class="empty-msg">Memuatkan senarai peserta...</div></div>
+</div>
+
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbwk6IQCYNyNhfPIdMgsoFlUEYflFmXicq8zDPbJif5xkDXREoQZqgP2xMLliPy_82W27Q/exec";
+
+function apiReady() {
+    return API_URL && API_URL.startsWith("http");
+}
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+let pesertaList = [];
+let personList = [];
+let bayaranState = {};
+let currentFilter = "all";
+let currentSearch = "";
+
+// Pecahkan setiap entri senarai peserta ikut tanda "/" (contoh:
+// "Muiz/Samad") kepada individu berasingan, supaya bayaran yuran boleh
+// ditanda seorang-seorang. Setiap individu diberi NOMBOR turutan (1,2,3...)
+// mengikut susunan asal senarai — nombor inilah yang dinyatakan oleh
+// peserta di kaunter urusetia.
+function buildPersonList(list) {
+    let out = [];
+    let counter = 0;
+    list.forEach((entry, ei) => {
+        let parts = entry.split("/").map(s => s.trim()).filter(s => s.length > 0);
+        if (parts.length === 0) return;
+        if (parts.length === 1) {
+            counter++;
+            out.push({ key: ei + "-0", number: counter, name: parts[0], partner: null });
+        } else {
+            parts.forEach((nm, pi) => {
+                counter++;
+                let partner = parts.filter((_, idx) => idx !== pi).join(" & ");
+                out.push({ key: ei + "-" + pi, number: counter, name: nm, partner: partner });
+            });
+        }
+    });
+    return out;
+}
+
+// Baris gilir POST supaya setiap kemaskini ditandakan satu-satu ke server
+// (sama corak seperti undi.html) — elak race condition bila beberapa
+// tanda ditekan pantas-pantas.
+let syncQueue = Promise.resolve();
+let pendingSyncCount = 0;
+
+function updateSyncIndicator(baseText) {
+    let el = document.getElementById("sourceTxt");
+    if (pendingSyncCount > 0) {
+        el.innerText = "🔄 Sync... (" + pendingSyncCount + ")";
+    } else if (baseText) {
+        el.innerText = baseText;
+    }
+}
+
+function pushBayaranToSheet(baseText) {
+    if (!apiReady()) return Promise.resolve();
+    pendingSyncCount++;
+    updateSyncIndicator();
+    syncQueue = syncQueue.then(() =>
+        fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify({ key: "kbttc_undian_bayaran", value: bayaranState })
+        }).catch(err => console.warn("Gagal sync bayaran ke Google Sheet:", err))
+    ).finally(() => {
+        pendingSyncCount--;
+        updateSyncIndicator(baseText);
+    });
+    return syncQueue;
+}
+
+async function loadState() {
+    if (!apiReady()) {
+        document.getElementById("sourceTxt").innerText = "⚠️ API_URL belum ditetapkan";
+        pesertaList = JSON.parse(localStorage.getItem("kbttc_undian_peserta") || "[]");
+        bayaranState = JSON.parse(localStorage.getItem("kbttc_undian_bayaran") || "{}");
+        personList = buildPersonList(pesertaList);
+        render();
+        return;
+    }
+    try {
+        let res = await fetch(API_URL, { cache: "no-store" });
+        let data = await res.json();
+        document.getElementById("sourceTxt").innerText = "🌐 Live — " + new Date().toLocaleTimeString("ms-MY");
+        pesertaList = data.kbttc_undian_peserta || [];
+        bayaranState = data.kbttc_undian_bayaran || {};
+        localStorage.setItem("kbttc_undian_bayaran", JSON.stringify(bayaranState));
+        personList = buildPersonList(pesertaList);
+        render();
+    } catch (err) {
+        document.getElementById("sourceTxt").innerText = "📴 Guna simpanan tempatan";
+        pesertaList = JSON.parse(localStorage.getItem("kbttc_undian_peserta") || "[]");
+        bayaranState = JSON.parse(localStorage.getItem("kbttc_undian_bayaran") || "{}");
+        personList = buildPersonList(pesertaList);
+        render();
+    }
+}
+
+function setFilter(f) {
+    currentFilter = f;
+    ["all", "paid", "unpaid"].forEach(k => {
+        document.getElementById("filter" + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle("active", k === f);
+    });
+    renderList();
+}
+
+function toggleBayar(key, flash) {
+    bayaranState[key] = !bayaranState[key];
+    localStorage.setItem("kbttc_undian_bayaran", JSON.stringify(bayaranState));
+    let srcTxt = document.getElementById("sourceTxt").innerText;
+    pushBayaranToSheet(srcTxt);
+    render();
+    if (flash) {
+        let el = document.querySelector(`[data-key="${CSS.escape(key)}"]`);
+        if (el) {
+            el.classList.add("flash");
+            setTimeout(() => el.classList.remove("flash"), 900);
+        }
+    }
+}
+
+// ===== Kaunter urusetia: taip nombor + Enter =====
+function handleNumberEntry() {
+    let input = document.getElementById("numberInput");
+    let fb = document.getElementById("counterFeedback");
+    let num = parseInt(input.value, 10);
+    input.value = "";
+    input.focus();
+
+    if (!num || num < 1) return;
+
+    let person = personList.find(p => p.number === num);
+    if (!person) {
+        fb.className = "counter-feedback err";
+        fb.innerText = `⚠️ Nombor ${num} tidak dijumpai dalam senarai.`;
+        return;
+    }
+
+    toggleBayar(person.key, true);
+    let nowPaid = !!bayaranState[person.key];
+    fb.className = "counter-feedback " + (nowPaid ? "ok" : "err");
+    fb.innerText = (nowPaid ? "✅ " : "↩️ ") + `No. ${num} — ${person.name}` +
+        (person.partner ? ` (pasangan: ${person.partner})` : "") +
+        (nowPaid ? " — SUDAH BAYAR." : " — ditanda semula BELUM BAYAR.");
+
+    // Auto pastikan kad berkenaan kelihatan dalam grid
+    let el = document.querySelector(`[data-key="${CSS.escape(person.key)}"]`);
+    if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+document.getElementById("numberInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") handleNumberEntry();
+});
+
+function render() {
+    renderSummary();
+    renderList();
+}
+
+function renderSummary() {
+    let total = personList.length;
+    let paid = personList.filter(p => bayaranState[p.key]).length;
+    let unpaid = total - paid;
+    document.getElementById("numTotal").innerText = total;
+    document.getElementById("numPaid").innerText = paid;
+    document.getElementById("numUnpaid").innerText = unpaid;
+    document.getElementById("progressBar").style.width = total ? Math.round((paid / total) * 100) + "%" : "0%";
+}
+
+function renderList() {
+    let wrap = document.getElementById("listWrap");
+    if (!personList.length) {
+        wrap.innerHTML = "<div class='empty-msg'>Tiada senarai peserta lagi. Sila simpan Senarai Nama di undi.html dahulu.</div>";
+        return;
+    }
+
+    let items = personList.filter(person => {
+        let paid = !!bayaranState[person.key];
+        if (currentFilter === "paid" && !paid) return false;
+        if (currentFilter === "unpaid" && paid) return false;
+        if (currentSearch) {
+            let hay = (person.name + " " + (person.partner || "") + " " + person.number).toLowerCase();
+            if (!hay.includes(currentSearch)) return false;
+        }
+        return true;
+    });
+
+    if (!items.length) {
+        wrap.innerHTML = "<div class='empty-msg'>Tiada peserta sepadan.</div>";
+        return;
+    }
+
+    let html = "";
+    items.forEach(person => {
+        let paid = !!bayaranState[person.key];
+        html += `<div class="p-card ${paid ? "is-paid" : ""}" data-key="${escapeHtml(person.key)}" onclick="toggleBayar('${person.key}')">
+            <div class="p-top">
+                <span class="p-num">${person.number}</span>
+                <span class="p-mark">${paid ? "✅" : "▫️"}</span>
+            </div>
+            <div class="p-name">${escapeHtml(person.name)}</div>
+            ${person.partner ? `<div class="p-sub">+ ${escapeHtml(person.partner)}</div>` : ""}
+        </div>`;
+    });
+    wrap.innerHTML = html;
+}
+
+document.getElementById("searchInput").addEventListener("input", (e) => {
+    currentSearch = e.target.value.trim().toLowerCase();
+    renderList();
+});
+
+loadState();
+setInterval(loadState, 8000);
+</script>
+
+</body>
+</html>

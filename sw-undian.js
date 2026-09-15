@@ -3,6 +3,8 @@ const FILES_TO_CACHE = [
   "./undi.html",
   "./papar.html",
   "./sejarah.html",
+  "./bayaran.html",
+  "./senarai-tablet.html",
   "./manifest-undian.json",
   "./icon-192.png",
   "./icon-512.png"
