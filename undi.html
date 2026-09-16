@@ -1567,6 +1567,20 @@ document.addEventListener("click", function(e){
         }
 
         let savedData = localStorage.getItem("pingpong_pairs");
+        if (!savedData) {
+            // "pingpong_pairs" cuma tersimpan tempatan (localStorage), tak
+            // disync ke server — jadi bila undi.html dibuka pada peranti
+            // BARU (contoh: phone) yang tak pernah simpan senarai nama
+            // secara tempatan sebelum ini, kotak ni akan nampak kosong
+            // walaupun "kbttc_undian_peserta" (senarai yang DISYNC) dah
+            // ada di server & baru ditarik oleh pullFromSheet() di atas.
+            // Bina balik kandungan kotak daripada senarai yang disync tu.
+            let syncedPeserta = JSON.parse(localStorage.getItem("kbttc_undian_peserta") || "null");
+            if (syncedPeserta && syncedPeserta.length) {
+                savedData = syncedPeserta.join("\n");
+                localStorage.setItem("pingpong_pairs", savedData);
+            }
+        }
         if (savedData) {
             document.getElementById("pairInput").value = savedData;
             document.getElementById("savedStatus").innerText = "✔ Nama telah dimuatkan dari simpanan terdahulu.";
