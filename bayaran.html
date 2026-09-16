@@ -276,6 +276,10 @@ function buildPersonList(list) {
 
 let syncQueue = Promise.resolve();
 let pendingSyncCount = 0;
+// Simpan key yang baru ditanda tapi belum SAH sampai server. Semasa
+// poll 8 saat, jangan timpa nilai key ni dengan data server (yang
+// mungkin masih data lama) — inilah punca tanda "release balik".
+let pendingKeys = new Set();
 
 function updateSyncTxt() {
     let el = document.getElementById("syncTxt");
@@ -295,12 +299,17 @@ function pushBayaranToSheet() {
     ).finally(() => {
         pendingSyncCount--;
         updateSyncTxt();
+        // Bila baris gilir kosong (semua POST setakat ini dah sampai
+        // server), boleh selamat lepaskan pendingKeys — data server
+        // sepatutnya dah ada tanda-tanda tempatan kita.
+        if (pendingSyncCount === 0) pendingKeys.clear();
     });
     return syncQueue;
 }
 
 function toggleTanda(key) {
     bayaranState[key] = !bayaranState[key];
+    pendingKeys.add(key);
     localStorage.setItem("kbttc_undian_bayaran", JSON.stringify(bayaranState));
     pushBayaranToSheet();
     render();
@@ -341,7 +350,13 @@ async function loadState() {
         let res = await fetch(API_URL, { cache: "no-store" });
         let data = await res.json();
         pesertaList = data.kbttc_undian_peserta || [];
-        bayaranState = data.kbttc_undian_bayaran || {};
+        let freshBayaran = data.kbttc_undian_bayaran || {};
+        // Terima semua nilai dari server, KECUALI key yang masih pending
+        // (tanda baru kita yang belum sah sampai server) — kekalkan
+        // nilai tempatan untuk key tu sehingga POST selesai.
+        Object.keys(freshBayaran).forEach(k => {
+            if (!pendingKeys.has(k)) bayaranState[k] = freshBayaran[k];
+        });
         localStorage.setItem("kbttc_undian_bayaran", JSON.stringify(bayaranState));
         personList = buildPersonList(pesertaList);
         render();
