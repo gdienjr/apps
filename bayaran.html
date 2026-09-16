@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Semakan Bayaran Yuran — KBTTC</title>
+<title>Senarai Semakan Bayaran — KBTTC</title>
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="theme-color" content="#0b9f6e">
@@ -18,8 +18,6 @@
   --muted:#6b778c;
   --primary:#0b9f6e;
   --primary2:#087a55;
-  --danger:#c0392b;
-  --gold:#f59e0b;
   --border:#dfe6ef;
 }
 *{box-sizing:border-box}
@@ -27,263 +25,94 @@ html,body{
   height:100%;
   margin:0;
   overflow:hidden;
-}
-body{
   font-family:Inter,"Segoe UI",Tahoma,Arial,sans-serif;
   color:var(--ink);
-  background:
-    radial-gradient(circle at 15% 0%,rgba(11,159,110,.10),transparent 28%),
-    radial-gradient(circle at 90% 10%,rgba(23,105,224,.07),transparent 25%),
-    var(--bg);
+  background:var(--bg);
 }
-.screen{
+.page{
   height:100vh;
+  width:100vw;
   display:flex;
   flex-direction:column;
-  padding:10px 14px 12px;
-  gap:8px;
+  padding:14px 20px 16px;
 }
-
-/* ===== Bar atas ===== */
 .top-bar{
+  flex:0 0 auto;
   display:flex;
-  align-items:center;
+  align-items:baseline;
   justify-content:space-between;
-  gap:10px;
-  flex:0 0 auto;
   flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:10px;
+  border-bottom:2px solid var(--primary);
+  padding-bottom:8px;
 }
-.top-bar h1{margin:0;font-size:clamp(16px,2vw,20px);color:var(--primary2)}
-.btn-back{
-  display:inline-block;
-  background:none;
-  border:1px solid var(--border);
+.top-bar h1{
+  margin:0;
+  font-size:clamp(18px,2.4vw,26px);
   color:var(--primary2);
-  border-radius:9px;
-  padding:6px 12px;
-  font-size:12.5px;
-  cursor:pointer;
-  text-decoration:none;
-  white-space:nowrap;
 }
-.updated-txt{font-size:11px;color:var(--muted);text-align:right}
-.btn-qr{
-  background:var(--primary);
-  color:#fff;
-  border:none;
-  border-radius:9px;
-  padding:7px 12px;
-  font-size:12px;
-  font-weight:700;
-  cursor:pointer;
-  white-space:nowrap;
-}
-.qr-modal-bg{
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(10,20,35,.55);
-  align-items:center;
-  justify-content:center;
-  z-index:100;
-  padding:20px;
-}
-.qr-modal-bg.show{display:flex}
-.qr-modal{
-  background:#fff;
-  border-radius:18px;
-  padding:22px 24px 20px;
-  text-align:center;
-  max-width:320px;
-  box-shadow:0 20px 50px rgba(0,0,0,.25);
-}
-.qr-modal h3{margin:0 0 4px;font-size:16px;color:var(--primary2)}
-.qr-modal p{margin:0 0 14px;font-size:12.5px;color:var(--muted);line-height:1.5}
-.qr-modal img{
-  width:200px;
-  height:200px;
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:8px;
-  background:#fff;
-}
-.qr-url{
-  margin-top:12px;
-  font-size:11px;
-  color:var(--muted);
-  word-break:break-all;
-  background:#f3f7fc;
-  border-radius:8px;
-  padding:6px 8px;
-}
-.btn-close-qr{
-  margin-top:14px;
-  background:none;
-  border:1px solid var(--border);
-  color:var(--ink);
-  border-radius:9px;
-  padding:8px 16px;
-  font-size:13px;
-  cursor:pointer;
-}
-
-/* ===== Kaunter Urusetia: taip nombor ===== */
-.counter-box{
-  flex:0 0 auto;
-  background:linear-gradient(135deg,var(--primary2),var(--primary));
-  border-radius:16px;
-  padding:12px 16px;
-  display:flex;
-  align-items:center;
-  gap:14px;
-  color:#fff;
-  box-shadow:0 10px 24px rgba(11,159,110,.22);
-}
-.counter-box label{
-  font-size:12.5px;
-  font-weight:700;
-  opacity:.9;
-  white-space:nowrap;
-}
-#numberInput{
-  flex:0 0 140px;
-  font-size:clamp(22px,3vw,30px);
-  font-weight:800;
-  text-align:center;
-  padding:8px 6px;
-  border:none;
-  border-radius:10px;
-  outline:none;
-  color:var(--ink);
-}
-.counter-feedback{
-  flex:1;
-  font-size:clamp(13px,1.6vw,16px);
-  font-weight:700;
-  min-height:1.3em;
-}
-.counter-feedback.ok{color:#eaffef}
-.counter-feedback.err{color:#ffe1dc}
-
-/* ===== Statistik & kawalan ===== */
-.stats-row{
-  flex:0 0 auto;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-}
-.stat-chip{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:6px 12px;
-  font-size:12.5px;
+.stats{
+  font-size:clamp(13px,1.5vw,17px);
   font-weight:700;
   color:var(--muted);
-  display:flex;
-  align-items:center;
-  gap:5px;
-  white-space:nowrap;
 }
-.stat-chip b{font-size:15px;color:var(--ink)}
-.stat-chip.paid b{color:var(--primary)}
-.stat-chip.unpaid b{color:var(--danger)}
-.progress-wrap{
-  flex:1;
-  min-width:80px;
-  height:9px;
-  background:#e3e9f1;
-  border-radius:999px;
-  overflow:hidden;
-}
-.progress-bar{
-  height:100%;
-  background:linear-gradient(90deg,var(--primary),#22c58e);
-  border-radius:999px;
-  transition:width .3s ease;
-}
-.search-input{
-  flex:0 0 160px;
-  padding:7px 10px;
-  border:1px solid #cfd8e5;
-  border-radius:9px;
-  font:12.5px/1.3 inherit;
-  outline:none;
-}
-.filter-btn{
-  padding:6px 10px;
-  border-radius:9px;
-  border:1px solid var(--border);
-  background:#f3f7fc;
-  color:var(--muted);
-  font-size:12px;
-  font-weight:700;
-  cursor:pointer;
-  white-space:nowrap;
-}
-.filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-
-/* ===== Grid peserta (isi baki skrin) ===== */
-.grid-wrap{
+.stats b{color:var(--primary2)}
+.sync-txt{font-size:11px;color:var(--muted)}
+.checklist{
   flex:1 1 auto;
   min-height:0;
+  columns:230px;
+  column-gap:14px;
+  column-fill:auto;
   overflow-y:auto;
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-  gap:8px;
-  align-content:start;
-  padding-right:2px;
 }
-.empty-msg{color:var(--muted);font-size:14px;text-align:center;padding:24px 10px;grid-column:1/-1}
-.p-card{
-  background:var(--card);
-  border:1.5px solid var(--border);
-  border-radius:12px;
-  padding:8px 10px;
-  cursor:pointer;
-  user-select:none;
-  transition:transform .1s ease,background .15s ease,border-color .15s ease;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  min-height:56px;
-}
-.p-card:active{transform:scale(.97)}
-.p-card.is-paid{
-  background:rgba(11,159,110,.10);
-  border-color:rgba(11,159,110,.5);
-}
-.p-card.flash{outline:3px solid var(--gold)}
-.p-top{display:flex;align-items:center;gap:6px}
-.p-num{
-  flex:0 0 auto;
-  min-width:22px;
-  height:22px;
-  border-radius:6px;
-  background:var(--primary2);
-  color:#fff;
-  font-size:11.5px;
-  font-weight:800;
+.item{
+  break-inside:avoid;
   display:flex;
   align-items:center;
-  justify-content:center;
-  padding:0 4px;
+  gap:10px;
+  padding:7px 9px;
+  margin-bottom:5px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:8px;
 }
-.p-card.is-paid .p-num{background:var(--primary)}
-.p-name{
-  font-size:13px;
-  font-weight:700;
-  word-break:break-word;
-  line-height:1.25;
+.item.is-checked{
+  background:rgba(11,159,110,.10);
+  border-color:rgba(11,159,110,.4);
 }
-.p-card.is-paid .p-name{color:var(--primary2)}
-.p-sub{font-size:10px;color:var(--muted);margin-top:2px}
-.p-mark{font-size:11px;margin-left:auto}
-
-@media(max-width:600px){
-  .grid-wrap{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
-  .counter-box{flex-wrap:wrap}
+.item .num{
+  flex:0 0 auto;
+  width:26px;
+  text-align:right;
+  font-weight:800;
+  font-size:clamp(12px,1.3vw,15px);
+  color:var(--muted);
+}
+.item.is-checked .num{color:var(--primary2)}
+.item .name{
+  flex:1 1 auto;
+  min-width:0;
+  font-size:clamp(12.5px,1.4vw,16px);
+  font-weight:600;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.item.is-checked .name{color:var(--primary2);text-decoration:line-through;text-decoration-color:rgba(11,159,110,.5)}
+.item input[type=checkbox]{
+  flex:0 0 auto;
+  width:26px;
+  height:26px;
+  accent-color:var(--primary);
+  cursor:pointer;
+}
+.empty-msg{
+  color:var(--muted);
+  font-size:16px;
+  text-align:center;
+  padding:40px 10px;
 }
 
 /* ===== Skrin Log Masuk Admin ===== */
@@ -349,43 +178,13 @@ body{
     </div>
 </div>
 
-
-<div class="screen">
+<div class="page">
     <div class="top-bar">
-        <a href="undi.html" class="btn-back">← Undian</a>
-        <h1>💰 Semakan Bayaran Yuran</h1>
-        <button class="btn-qr" onclick="showQr()">📱 QR Kod</button>
-        <div class="updated-txt" id="sourceTxt"></div>
+        <h1>💰 Senarai Semakan Bayaran</h1>
+        <div class="stats" id="statsTxt">Memuatkan...</div>
     </div>
-
-    <div class="qr-modal-bg" id="qrModalBg">
-        <div class="qr-modal">
-            <h3>📱 Scan untuk buka di Phone</h3>
-            <p>Guna kamera phone untuk scan, lepas tu pilih "Add to Home Screen" supaya senang capai bila-bila masa perlu tandakan bayaran.</p>
-            <img id="qrImg" alt="QR Kod halaman ini">
-            <div class="qr-url" id="qrUrlTxt"></div>
-            <button class="btn-close-qr" onclick="hideQr()">Tutup</button>
-        </div>
-    </div>
-
-    <div class="counter-box">
-        <label>NOMBOR<br>PESERTA</label>
-        <input type="number" id="numberInput" inputmode="numeric" placeholder="?" autofocus>
-        <div class="counter-feedback" id="counterFeedback">Sila taip nombor &amp; tekan Enter apabila peserta hadir di kaunter.</div>
-    </div>
-
-    <div class="stats-row">
-        <div class="stat-chip">Jumlah <b id="numTotal">0</b></div>
-        <div class="stat-chip paid">Sudah Bayar <b id="numPaid">0</b></div>
-        <div class="stat-chip unpaid">Belum Bayar <b id="numUnpaid">0</b></div>
-        <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
-        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Cari nama...">
-        <button class="filter-btn active" id="filterAll" onclick="setFilter('all')">Semua</button>
-        <button class="filter-btn" id="filterPaid" onclick="setFilter('paid')">Sudah Bayar</button>
-        <button class="filter-btn" id="filterUnpaid" onclick="setFilter('unpaid')">Belum Bayar</button>
-    </div>
-
-    <div class="grid-wrap" id="listWrap"><div class="empty-msg">Memuatkan senarai peserta...</div></div>
+    <div class="checklist" id="checklist"><div class="empty-msg">Memuatkan senarai peserta...</div></div>
+    <div class="sync-txt" id="syncTxt"></div>
 </div>
 
 <script>
@@ -453,20 +252,6 @@ async function ensureAuth() {
     await showLoginGate();
 }
 
-// Papar QR kod untuk URL halaman ini (bukan API_URL) supaya phone boleh
-// scan terus buka bayaran.html — auto ikut mana-mana domain ia dihosting.
-function showQr() {
-    let url = window.location.href;
-    document.getElementById("qrImg").src =
-        "https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=" + encodeURIComponent(url);
-    document.getElementById("qrUrlTxt").innerText = url;
-    document.getElementById("qrModalBg").classList.add("show");
-}
-
-function hideQr() {
-    document.getElementById("qrModalBg").classList.remove("show");
-}
-
 function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -474,69 +259,78 @@ function escapeHtml(s) {
 let pesertaList = [];
 let personList = [];
 let bayaranState = {};
-let currentFilter = "all";
-let currentSearch = "";
 
-// Pecahkan setiap entri senarai peserta ikut tanda "/" (contoh:
-// "Muiz/Samad") kepada individu berasingan, supaya bayaran yuran boleh
-// ditanda seorang-seorang. Setiap individu diberi NOMBOR turutan (1,2,3...)
-// mengikut susunan asal senarai — nombor inilah yang dinyatakan oleh
-// peserta di kaunter urusetia.
+// Pecahkan setiap entri ("Muiz/Samad") kepada individu berasingan —
+// nama pasangan tidak dipaparkan di sini, cuma nama sendiri.
 function buildPersonList(list) {
     let out = [];
-    let counter = 0;
     list.forEach((entry, ei) => {
         let parts = entry.split("/").map(s => s.trim()).filter(s => s.length > 0);
         if (parts.length === 0) return;
-        if (parts.length === 1) {
-            counter++;
-            out.push({ key: ei + "-0", number: counter, name: parts[0], partner: null });
-        } else {
-            parts.forEach((nm, pi) => {
-                counter++;
-                let partner = parts.filter((_, idx) => idx !== pi).join(" & ");
-                out.push({ key: ei + "-" + pi, number: counter, name: nm, partner: partner });
-            });
-        }
+        parts.forEach((nm, pi) => {
+            out.push({ key: ei + "-" + pi, name: nm });
+        });
     });
     return out;
 }
 
-// Baris gilir POST supaya setiap kemaskini ditandakan satu-satu ke server
-// (sama corak seperti undi.html) — elak race condition bila beberapa
-// tanda ditekan pantas-pantas.
 let syncQueue = Promise.resolve();
 let pendingSyncCount = 0;
 
-function updateSyncIndicator(baseText) {
-    let el = document.getElementById("sourceTxt");
-    if (pendingSyncCount > 0) {
-        el.innerText = "🔄 Sync... (" + pendingSyncCount + ")";
-    } else if (baseText) {
-        el.innerText = baseText;
-    }
+function updateSyncTxt() {
+    let el = document.getElementById("syncTxt");
+    el.innerText = pendingSyncCount > 0 ? "🔄 Menghantar tanda ke server..." : "";
 }
 
-function pushBayaranToSheet(baseText) {
+function pushBayaranToSheet() {
     if (!apiReady()) return Promise.resolve();
     pendingSyncCount++;
-    updateSyncIndicator();
+    updateSyncTxt();
     syncQueue = syncQueue.then(() =>
         fetch(API_URL, {
             method: "POST",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify({ key: "kbttc_undian_bayaran", value: bayaranState, password: getStoredPw() })
-        }).catch(err => console.warn("Gagal sync bayaran ke Google Sheet:", err))
+        }).catch(err => console.warn("Gagal sync ke Google Sheet:", err))
     ).finally(() => {
         pendingSyncCount--;
-        updateSyncIndicator(baseText);
+        updateSyncTxt();
     });
     return syncQueue;
 }
 
+function toggleTanda(key) {
+    bayaranState[key] = !bayaranState[key];
+    localStorage.setItem("kbttc_undian_bayaran", JSON.stringify(bayaranState));
+    pushBayaranToSheet();
+    render();
+}
+
+function render() {
+    let wrap = document.getElementById("checklist");
+    if (!personList.length) {
+        wrap.innerHTML = "<div class='empty-msg'>Tiada senarai peserta lagi. Sila simpan Senarai Nama di undi.html dahulu.</div>";
+        document.getElementById("statsTxt").innerText = "";
+        return;
+    }
+
+    let checkedCount = personList.filter(p => bayaranState[p.key]).length;
+    document.getElementById("statsTxt").innerHTML = `Jumlah: <b>${personList.length}</b> &nbsp;•&nbsp; Sudah Dibayar: <b>${checkedCount}</b> &nbsp;•&nbsp; Baki: <b>${personList.length - checkedCount}</b>`;
+
+    let html = "";
+    personList.forEach((person, i) => {
+        let checked = !!bayaranState[person.key];
+        html += `<div class="item ${checked ? "is-checked" : ""}">
+            <span class="num">${i + 1}.</span>
+            <span class="name">${escapeHtml(person.name)}</span>
+            <input type="checkbox" ${checked ? "checked" : ""} onchange="toggleTanda('${person.key}')">
+        </div>`;
+    });
+    wrap.innerHTML = html;
+}
+
 async function loadState() {
     if (!apiReady()) {
-        document.getElementById("sourceTxt").innerText = "⚠️ API_URL belum ditetapkan";
         pesertaList = JSON.parse(localStorage.getItem("kbttc_undian_peserta") || "[]");
         bayaranState = JSON.parse(localStorage.getItem("kbttc_undian_bayaran") || "{}");
         personList = buildPersonList(pesertaList);
@@ -546,134 +340,18 @@ async function loadState() {
     try {
         let res = await fetch(API_URL, { cache: "no-store" });
         let data = await res.json();
-        document.getElementById("sourceTxt").innerText = "🌐 Live — " + new Date().toLocaleTimeString("ms-MY");
         pesertaList = data.kbttc_undian_peserta || [];
         bayaranState = data.kbttc_undian_bayaran || {};
         localStorage.setItem("kbttc_undian_bayaran", JSON.stringify(bayaranState));
         personList = buildPersonList(pesertaList);
         render();
     } catch (err) {
-        document.getElementById("sourceTxt").innerText = "📴 Guna simpanan tempatan";
         pesertaList = JSON.parse(localStorage.getItem("kbttc_undian_peserta") || "[]");
         bayaranState = JSON.parse(localStorage.getItem("kbttc_undian_bayaran") || "{}");
         personList = buildPersonList(pesertaList);
         render();
     }
 }
-
-function setFilter(f) {
-    currentFilter = f;
-    ["all", "paid", "unpaid"].forEach(k => {
-        document.getElementById("filter" + k.charAt(0).toUpperCase() + k.slice(1)).classList.toggle("active", k === f);
-    });
-    renderList();
-}
-
-function toggleBayar(key, flash) {
-    bayaranState[key] = !bayaranState[key];
-    localStorage.setItem("kbttc_undian_bayaran", JSON.stringify(bayaranState));
-    let srcTxt = document.getElementById("sourceTxt").innerText;
-    pushBayaranToSheet(srcTxt);
-    render();
-    if (flash) {
-        let el = document.querySelector(`[data-key="${CSS.escape(key)}"]`);
-        if (el) {
-            el.classList.add("flash");
-            setTimeout(() => el.classList.remove("flash"), 900);
-        }
-    }
-}
-
-// ===== Kaunter urusetia: taip nombor + Enter =====
-function handleNumberEntry() {
-    let input = document.getElementById("numberInput");
-    let fb = document.getElementById("counterFeedback");
-    let num = parseInt(input.value, 10);
-    input.value = "";
-    input.focus();
-
-    if (!num || num < 1) return;
-
-    let person = personList.find(p => p.number === num);
-    if (!person) {
-        fb.className = "counter-feedback err";
-        fb.innerText = `⚠️ Nombor ${num} tidak dijumpai dalam senarai.`;
-        return;
-    }
-
-    toggleBayar(person.key, true);
-    let nowPaid = !!bayaranState[person.key];
-    fb.className = "counter-feedback " + (nowPaid ? "ok" : "err");
-    fb.innerText = (nowPaid ? "✅ " : "↩️ ") + `No. ${num} — ${person.name}` +
-        (person.partner ? ` (pasangan: ${person.partner})` : "") +
-        (nowPaid ? " — SUDAH BAYAR." : " — ditanda semula BELUM BAYAR.");
-
-    // Auto pastikan kad berkenaan kelihatan dalam grid
-    let el = document.querySelector(`[data-key="${CSS.escape(person.key)}"]`);
-    if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-}
-
-document.getElementById("numberInput").addEventListener("keydown", (e) => {
-    if (e.key === "Enter") handleNumberEntry();
-});
-
-function render() {
-    renderSummary();
-    renderList();
-}
-
-function renderSummary() {
-    let total = personList.length;
-    let paid = personList.filter(p => bayaranState[p.key]).length;
-    let unpaid = total - paid;
-    document.getElementById("numTotal").innerText = total;
-    document.getElementById("numPaid").innerText = paid;
-    document.getElementById("numUnpaid").innerText = unpaid;
-    document.getElementById("progressBar").style.width = total ? Math.round((paid / total) * 100) + "%" : "0%";
-}
-
-function renderList() {
-    let wrap = document.getElementById("listWrap");
-    if (!personList.length) {
-        wrap.innerHTML = "<div class='empty-msg'>Tiada senarai peserta lagi. Sila simpan Senarai Nama di undi.html dahulu.</div>";
-        return;
-    }
-
-    let items = personList.filter(person => {
-        let paid = !!bayaranState[person.key];
-        if (currentFilter === "paid" && !paid) return false;
-        if (currentFilter === "unpaid" && paid) return false;
-        if (currentSearch) {
-            let hay = (person.name + " " + (person.partner || "") + " " + person.number).toLowerCase();
-            if (!hay.includes(currentSearch)) return false;
-        }
-        return true;
-    });
-
-    if (!items.length) {
-        wrap.innerHTML = "<div class='empty-msg'>Tiada peserta sepadan.</div>";
-        return;
-    }
-
-    let html = "";
-    items.forEach(person => {
-        let paid = !!bayaranState[person.key];
-        html += `<div class="p-card ${paid ? "is-paid" : ""}" data-key="${escapeHtml(person.key)}" onclick="toggleBayar('${person.key}')">
-            <div class="p-top">
-                <span class="p-num">${person.number}</span>
-                <span class="p-mark">${paid ? "✅" : "▫️"}</span>
-            </div>
-            <div class="p-name">${escapeHtml(person.name)}</div>
-            ${person.partner ? `<div class="p-sub">+ ${escapeHtml(person.partner)}</div>` : ""}
-        </div>`;
-    });
-    wrap.innerHTML = html;
-}
-
-document.getElementById("searchInput").addEventListener("input", (e) => {
-    currentSearch = e.target.value.trim().toLowerCase();
-    renderList();
-});
 
 ensureAuth().then(() => {
     loadState();
