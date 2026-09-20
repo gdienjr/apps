@@ -917,6 +917,20 @@ button.is-loading::before{display:none}
   to{opacity:1;transform:translateY(0)}
 }
 
+
+/* Preset Nama Game / Pesanan Pengurus */
+.preset-row{display:flex;gap:8px;margin-top:8px}
+.preset-row button{
+  flex:1;
+  margin-top:0;
+  padding:9px 8px;
+  font-size:12.5px;
+  background:linear-gradient(135deg,#c3ccd8,#dbe2ea);
+  color:#33415a;
+  box-shadow:none;
+}
+select.title-input{cursor:pointer}
+.field-gap{margin-top:8px}
 </style>
 </head>
 <body>
@@ -938,6 +952,38 @@ button.is-loading::before{display:none}
     <h4>🏓 KBTTC-Sistem Game Pingpong</h4>
     <div class="subtitle"></div>
     <div id="syncStatus" class="sync-status no-print"></div>
+    <!-- Nama Game (pilih dropdown + tarikh) -->
+    <div class="stage no-print" id="titleStage">
+        <h4>🏷️ Nama Game</h4>
+        <p>Pilih nama game dan tarikh. Tajuk akan jadi "Nama — dd/mm/yyyy".</p>
+        <select id="titlePresetSelect" class="title-input" onchange="kemaskiniPratontonTajuk()"></select>
+        <input type="date" id="titleDateInput" class="title-input field-gap" onchange="kemaskiniPratontonTajuk()">
+        <div class="preset-row">
+            <button type="button" onclick="tambahNamaGame()">➕ Tambah nama</button>
+            <button type="button" onclick="buangNamaGame()">🗑️ Buang nama dipilih</button>
+        </div>
+        <div class="mode-status-txt">
+            <div id="titlePreview"></div>
+            <div id="titleCurrent"></div>
+        </div>
+        <button onclick="simpanTajuk()">💾 Simpan Nama Game</button>
+        <span id="titleSavedStatus" class="saved-msg"></span>
+    </div>
+
+    <!-- Pesanan Pengurus Perlawanan (Ticker) -->
+    <div class="stage no-print" id="announcementStage">
+        <h3>📢 Pesanan Pengurus Perlawanan</h3>
+        <p>Pilih pesanan yang nak dipaparkan di View. Pilih "Tiada pesanan" untuk sembunyikan ticker.</p>
+        <select id="announcementPresetSelect" class="title-input" onchange="kemaskiniPratontonPesanan()"></select>
+        <div class="preset-row">
+            <button type="button" onclick="tambahPesanan()">➕ Tambah pesanan</button>
+            <button type="button" onclick="buangPesanan()">🗑️ Buang pesanan dipilih</button>
+        </div>
+        <div class="mode-status-txt" id="announcementPreview"></div>
+        <button onclick="simpanPesanan()">💾 Simpan Pesanan</button>
+        <span id="announcementSavedStatus" class="saved-msg"></span>
+    </div>
+
     <a href="view.html" target="_blank" class="btn-player-view no-print">👁️ View(Live)</a>
     <a href="history.html" target="_blank" class="btn-history no-print">📜 History</a>
     <a href="bayaran.html" target="_blank" class="btn-bayaran no-print">💰 Bayaran Yuran</a>
@@ -951,24 +997,6 @@ button.is-loading::before{display:none}
             <button type="button" id="btnMode2" onclick="tukarMod('2')">2 GROUP (A, B)</button>
         </div>
         <div class="mode-status-txt" id="modeStatus"></div>
-    </div>
-
-    <!-- Tajuk Kejohanan -->
-    <div class="stage no-print" id="titleStage">
-        <h4>🏷️ Nama Game</h4>
-        <p></p>
-        <input type="text" id="tournamentTitleInput" placeholder="Contoh: Kejohanan Pingpong Beregu KBTTC 2026" class="title-input">
-        <button onclick="simpanTajuk()">💾 Simpan Nama Game</button>
-        <span id="titleSavedStatus" class="saved-msg"></span>
-    </div>
-
-    <!-- Pesanan Pengurus Perlawanan (Ticker) -->
-    <div class="stage no-print" id="announcementStage">
-        <h3>📢 Pesanan Pengurus Perlawanan</h3>
-        <p></p>
-        <input type="text" id="announcementInput" placeholder="Contoh: Sila hadir ke gelanggang 2 dalam masa 5 minit." class="title-input">
-        <button onclick="simpanPesanan()">💾 Simpan Pesanan</button>
-        <span id="announcementSavedStatus" class="saved-msg"></span>
     </div>
 
     <!-- Prapendaftaran & Grouping -->
@@ -1548,23 +1576,8 @@ document.addEventListener("click", function(e){
 
         updateModeUI();
 
-        let savedTitle = localStorage.getItem("kbttc_undian_title");
-        if (savedTitle) {
-            try {
-                document.getElementById("tournamentTitleInput").value = JSON.parse(savedTitle);
-            } catch (e) {
-                document.getElementById("tournamentTitleInput").value = savedTitle;
-            }
-        }
-
-        let savedAnnouncement = localStorage.getItem("kbttc_undian_announcement");
-        if (savedAnnouncement) {
-            try {
-                document.getElementById("announcementInput").value = JSON.parse(savedAnnouncement);
-            } catch (e) {
-                document.getElementById("announcementInput").value = savedAnnouncement;
-            }
-        }
+        initTajukUI();
+        initPesananUI();
 
         let savedData = localStorage.getItem("pingpong_pairs");
         if (!savedData) {
@@ -1673,20 +1686,178 @@ document.addEventListener("click", function(e){
         saveState("kbttc_undian_peserta", pesertaList);
     }
 
+    // ====== Nama Game & Pesanan Pengurus: dropdown preset ======
+    // Senarai preset disimpan dalam localStorage peranti admin ini sahaja
+    // (bukan disync ke Google Sheet). Yang disync hanyalah tajuk & pesanan
+    // yang DIPILIH dan disimpan (kbttc_undian_title / _announcement).
+    const PRESET_NAMA_KEY = "kbttc_preset_namagame";
+    const PRESET_PESANAN_KEY = "kbttc_preset_pesanan";
+    const TITLE_LAST_KEY = "kbttc_title_lastname";
+
+    function loadPresetList(key) {
+        try {
+            let arr = JSON.parse(localStorage.getItem(key) || "[]");
+            return Array.isArray(arr) ? arr.filter(x => typeof x === "string" && x.trim()) : [];
+        } catch (e) { return []; }
+    }
+    function savePresetList(key, arr) {
+        localStorage.setItem(key, JSON.stringify(arr));
+    }
+    function readSavedString(key) {
+        let raw = localStorage.getItem(key);
+        if (!raw) return "";
+        try {
+            let v = JSON.parse(raw);
+            return typeof v === "string" ? v : "";
+        } catch (e) { return raw; }
+    }
+    function todayIso() {
+        let d = new Date();
+        return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+    function formatTarikh(iso) {
+        let p = (iso || "").split("-");
+        return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : "";
+    }
+    function fillSelect(sel, placeholder, values, selected) {
+        sel.innerHTML = "";
+        let ph = document.createElement("option");
+        ph.value = "";
+        ph.textContent = placeholder;
+        sel.appendChild(ph);
+        values.forEach(v => {
+            let o = document.createElement("option");
+            o.value = v;
+            o.textContent = v;
+            sel.appendChild(o);
+        });
+        sel.value = selected || "";
+        if (sel.value !== (selected || "")) sel.value = "";
+    }
+
+    // ---- Nama Game ----
+    function bentukTajuk() {
+        let name = document.getElementById("titlePresetSelect").value;
+        if (!name) return "";
+        let tarikh = formatTarikh(document.getElementById("titleDateInput").value);
+        return tarikh ? `${name} — ${tarikh}` : name;
+    }
+
+    function isiPilihanNamaGame(selected) {
+        let list = loadPresetList(PRESET_NAMA_KEY);
+        fillSelect(
+            document.getElementById("titlePresetSelect"),
+            list.length ? "-- Pilih nama game --" : "-- Belum ada nama game, tekan ➕ Tambah nama --",
+            list, selected
+        );
+        kemaskiniPratontonTajuk();
+    }
+
+    function kemaskiniPratontonTajuk() {
+        let name = document.getElementById("titlePresetSelect").value;
+        if (name) localStorage.setItem(TITLE_LAST_KEY, name);
+        let t = bentukTajuk();
+        document.getElementById("titlePreview").innerText = t ? "Akan dipaparkan: " + t : "Pilih nama game dahulu.";
+    }
+
+    function paparTajukSemasa() {
+        let cur = readSavedString("kbttc_undian_title");
+        document.getElementById("titleCurrent").innerText = cur ? "Sedang dipaparkan di View: " + cur : "Belum ada tajuk disimpan.";
+    }
+
+    function initTajukUI() {
+        document.getElementById("titleDateInput").value = todayIso();
+        isiPilihanNamaGame(localStorage.getItem(TITLE_LAST_KEY) || "");
+        paparTajukSemasa();
+    }
+
+    function tambahNamaGame() {
+        let nm = prompt("Nama game baru (tanpa tarikh — tarikh dipilih berasingan):");
+        if (nm === null) return;
+        nm = nm.trim();
+        if (!nm) return;
+        let list = loadPresetList(PRESET_NAMA_KEY);
+        if (!list.includes(nm)) {
+            list.push(nm);
+            savePresetList(PRESET_NAMA_KEY, list);
+        }
+        isiPilihanNamaGame(nm);
+    }
+
+    function buangNamaGame() {
+        let name = document.getElementById("titlePresetSelect").value;
+        if (!name) { alert("Pilih nama game yang nak dibuang dahulu."); return; }
+        if (!confirm(`Buang "${name}" daripada senarai pilihan? (Tajuk yang dah disimpan tak terjejas.)`)) return;
+        savePresetList(PRESET_NAMA_KEY, loadPresetList(PRESET_NAMA_KEY).filter(n => n !== name));
+        if (localStorage.getItem(TITLE_LAST_KEY) === name) localStorage.removeItem(TITLE_LAST_KEY);
+        isiPilihanNamaGame("");
+    }
+
     function simpanTajuk() {
-        let val = document.getElementById("tournamentTitleInput").value.trim();
-        saveState("kbttc_undian_title", val);
+        let t = bentukTajuk();
+        if (!t) { alert("Sila pilih nama game dahulu."); return; }
+        saveState("kbttc_undian_title", t);
+        paparTajukSemasa();
         let statusEl = document.getElementById("titleSavedStatus");
         statusEl.innerText = "✔ Tajuk disimpan!";
         setTimeout(() => { statusEl.innerText = ""; }, 4000);
     }
 
+    // ---- Pesanan Pengurus Perlawanan ----
+    function isiPilihanPesanan(selected) {
+        let list = loadPresetList(PRESET_PESANAN_KEY);
+        let cur = readSavedString("kbttc_undian_announcement").trim();
+        let all = list.slice();
+        // Pesanan yang sedang aktif tapi belum ada dalam senarai preset
+        // (contoh: ditaip semasa versi lama) tetap dipaparkan supaya tak hilang.
+        if (cur && !all.includes(cur)) all.unshift(cur);
+        fillSelect(
+            document.getElementById("announcementPresetSelect"),
+            "-- Tiada pesanan (sembunyikan ticker) --",
+            all, selected === undefined ? cur : selected
+        );
+        kemaskiniPratontonPesanan();
+    }
+
+    function kemaskiniPratontonPesanan() {
+        let v = document.getElementById("announcementPresetSelect").value;
+        document.getElementById("announcementPreview").innerText = v ? "Akan dipaparkan: " + v : "Ticker akan disembunyikan.";
+    }
+
+    function initPesananUI() {
+        isiPilihanPesanan();
+    }
+
+    function tambahPesanan() {
+        let msg = prompt("Pesanan baru untuk dipaparkan di View:");
+        if (msg === null) return;
+        msg = msg.trim();
+        if (!msg) return;
+        let list = loadPresetList(PRESET_PESANAN_KEY);
+        if (!list.includes(msg)) {
+            list.push(msg);
+            savePresetList(PRESET_PESANAN_KEY, list);
+        }
+        isiPilihanPesanan(msg);
+    }
+
+    function buangPesanan() {
+        let v = document.getElementById("announcementPresetSelect").value;
+        if (!v) { alert("Pilih pesanan yang nak dibuang dahulu."); return; }
+        let list = loadPresetList(PRESET_PESANAN_KEY);
+        if (!list.includes(v)) { alert("Pesanan ni bukan dalam senarai pilihan."); return; }
+        if (!confirm(`Buang pesanan ini daripada senarai pilihan?\n\n"${v}"\n\n(Pesanan yang sedang dipaparkan di View tak terjejas.)`)) return;
+        savePresetList(PRESET_PESANAN_KEY, list.filter(x => x !== v));
+        isiPilihanPesanan("");
+    }
+
     function simpanPesanan() {
-        let val = document.getElementById("announcementInput").value.trim();
+        let val = document.getElementById("announcementPresetSelect").value.trim();
         saveState("kbttc_undian_announcement", val);
         let statusEl = document.getElementById("announcementSavedStatus");
         statusEl.innerText = val ? "✔ Pesanan disimpan!" : "✔ Ticker disembunyikan.";
         setTimeout(() => { statusEl.innerText = ""; }, 4000);
+        isiPilihanPesanan(val);
     }
 
     function buatGrouping() {
@@ -2218,8 +2389,7 @@ document.addEventListener("click", function(e){
 
     // ====== Cetak Carta Draw Sheet (peringkat kalah mati) — gaya bracket pokok ======
     function currentTournamentTitle() {
-        let t = document.getElementById("tournamentTitleInput").value.trim();
-        return t || "Kejohanan Pingpong KBTTC";
+        return bentukTajuk() || readSavedString("kbttc_undian_title").trim() || "Kejohanan Pingpong KBTTC";
     }
 
     function paparUrl() {
