@@ -938,8 +938,8 @@ button.is-loading::before{display:none}
     <h4>🏓 KBTTC-Sistem Game Pingpong</h4>
     <div class="subtitle"></div>
     <div id="syncStatus" class="sync-status no-print"></div>
-    <a href="papar.html" target="_blank" class="btn-player-view no-print">👁️ View(Live)</a>
-    <a href="sejarah.html" target="_blank" class="btn-history no-print">📜 History</a>
+    <a href="view.html" target="_blank" class="btn-player-view no-print">👁️ View(Live)</a>
+    <a href="history.html" target="_blank" class="btn-history no-print">📜 History</a>
     <a href="bayaran.html" target="_blank" class="btn-bayaran no-print">💰 Bayaran Yuran</a>
     <button class="btn-reset no-print" onclick="resetSemua()">🗑️ Reset Semua Data</button>
 
@@ -1214,7 +1214,7 @@ document.addEventListener("click", function(e){
     // secara pantas, beberapa request fetch() ditembak hampir serentak
     // tanpa dijamin susunan sampai ke server. Kalau request yang bawa
     // data LAMA sampai LEWAT (network delay), ia boleh overwrite data
-    // BARU yang sepatutnya sampai dulu — punca papar.html papar hasil
+    // BARU yang sepatutnya sampai dulu — punca view.html papar hasil
     // separuh walaupun undi.html (localStorage) dah lengkap.
     let syncQueue = Promise.resolve();
     let pendingSyncCount = 0;
@@ -1667,7 +1667,7 @@ document.addEventListener("click", function(e){
             document.getElementById("savedStatus").innerText = "✔ Nama tersimpan dalam peranti ini.";
         }, 5000);
 
-        // Sync senarai peserta ke server supaya papar.html boleh papar
+        // Sync senarai peserta ke server supaya view.html boleh papar
         // senarai peserta walaupun undian kumpulan belum dijalankan lagi.
         let pesertaList = inputVal.split("\n").map(p => p.trim()).filter(p => p.length > 0);
         saveState("kbttc_undian_peserta", pesertaList);
@@ -2223,7 +2223,7 @@ document.addEventListener("click", function(e){
     }
 
     function paparUrl() {
-        return new URL("papar.html", window.location.href).href;
+        return new URL("view.html", window.location.href).href;
     }
 
     function renderTreeMatchesPrintHTML(hasR16, state) {

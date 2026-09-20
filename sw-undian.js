@@ -1,8 +1,8 @@
-const CACHE_NAME = "kbttc-undian-v39";
+const CACHE_NAME = "kbttc-undian-v40";
 const FILES_TO_CACHE = [
   "./undi.html",
-  "./papar.html",
-  "./sejarah.html",
+  "./view.html",
+  "./history.html",
   "./bayaran.html",
   "./manifest-undian.json",
   "./icon-192.png",
