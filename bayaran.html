@@ -114,6 +114,55 @@ html,body{
   text-align:center;
   padding:40px 10px;
 }
+.btn-print{
+  flex:0 0 auto;
+  background:var(--primary);
+  color:#fff;
+  border:none;
+  border-radius:9px;
+  padding:8px 14px;
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+}
+.print-heading{display:none}
+
+@media print{
+  .no-print{display:none !important}
+  html,body{height:auto;overflow:visible;background:#fff}
+  .page{height:auto;padding:0}
+  .top-bar{border-bottom-color:#000}
+  .checklist{overflow:visible;flex:none}
+  .item{border-color:#999;break-inside:avoid}
+  .item.is-checked{background:#eee;border-color:#333}
+  .item input[type=checkbox]{
+    -webkit-appearance:none;
+    appearance:none;
+    width:15px;
+    height:15px;
+    border:1.4px solid #333;
+    border-radius:3px;
+    position:relative;
+    margin:0;
+  }
+  .item input[type=checkbox]:checked::after{
+    content:"✔";
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:11px;
+    color:#000;
+  }
+  .print-heading{
+    display:block;
+    text-align:center;
+    font-size:11px;
+    color:#333;
+    margin:0 0 6px;
+  }
+}
 
 /* ===== Skrin Log Masuk Admin ===== */
 .auth-gate{
@@ -182,9 +231,11 @@ html,body{
     <div class="top-bar">
         <h1>💰 Senarai Semakan Bayaran</h1>
         <div class="stats" id="statsTxt">Memuatkan...</div>
+        <button type="button" class="btn-print no-print" onclick="window.print()">🖨️ Cetak</button>
     </div>
+    <div class="print-heading" id="printHeading"></div>
     <div class="checklist" id="checklist"><div class="empty-msg">Memuatkan senarai peserta...</div></div>
-    <div class="sync-txt" id="syncTxt"></div>
+    <div class="sync-txt no-print" id="syncTxt"></div>
 </div>
 
 <script>
@@ -325,6 +376,7 @@ function render() {
 
     let checkedCount = personList.filter(p => bayaranState[p.key]).length;
     document.getElementById("statsTxt").innerHTML = `Jumlah: <b>${personList.length}</b> &nbsp;•&nbsp; Sudah Dibayar: <b>${checkedCount}</b> &nbsp;•&nbsp; Baki: <b>${personList.length - checkedCount}</b>`;
+    document.getElementById("printHeading").innerText = "Dicetak: " + new Date().toLocaleString("ms-MY");
 
     let html = "";
     personList.forEach((person, i) => {
