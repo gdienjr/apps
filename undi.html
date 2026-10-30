@@ -1008,6 +1008,15 @@ select.title-input{cursor:pointer}
         <button type="button" class="btn-clean" onclick="bersihkanNombor()">🧹 Bersihkan Nombor</button>
         <button class="btn-save" onclick="simpanNama()">💾 Simpan Senarai Nama</button>
         <span id="savedStatus" class="saved-msg"></span>
+        <details class="no-print" style="margin-top:14px;">
+            <summary style="cursor:pointer;font-weight:700;color:var(--primary2);">✍️ Grouping Manual (dah tetapkan sendiri)</summary>
+            <p style="margin:8px 0;font-size:12.5px;color:var(--muted);">
+                Tampal ikut format: tajuk kumpulan dahulu, kemudian nama pair satu baris satu.<br>
+                Contoh: <i>Kumpulan A</i> → senarai nama → <i>Kumpulan B</i> → senarai nama...
+            </p>
+            <textarea id="manualGroupInput" placeholder="Kumpulan A&#10;Ali/Abu&#10;Muthu/Samy&#10;...&#10;&#10;Kumpulan B&#10;..."></textarea>
+            <button type="button" class="btn-save" onclick="gunaGroupingManual()">✅ Guna Grouping Manual</button>
+        </details>
         <button id="btnGroup" onclick="buatGrouping()">🎲 Undian Grouping</button>
         <div id="resultGroup" class="result-box" style="display:none;"></div>
 
@@ -1860,6 +1869,81 @@ document.addEventListener("click", function(e){
         isiPilihanPesanan(val);
     }
 
+    // Logik selepas groups ditetapkan — dikongsi oleh undian rawak & grouping manual
+    function terapkanGrouping(groups) {
+        let resBox = document.getElementById("resultGroup");
+        resBox.innerHTML = renderGroupResult(groups);
+        showResult(resBox);
+
+        currentGroups = groups;
+        saveState("kbttc_undian_groups", groups);
+        clearState("kbttc_undian_ranks");
+        clearState("kbttc_undian_slotjuara");
+        clearState("kbttc_undian_p16");
+        clearState("kbttc_undian_p16full");
+        clearState("kbttc_undian_qf2");
+        clearState("kbttc_undian_matches");
+
+        document.getElementById("scoreBtnWrap").style.display = "block";
+        ["resultJuara", "resultP16", "resultQf2"].forEach(id => {
+            let el = document.getElementById(id);
+            el.style.display = "none";
+            el.innerHTML = "";
+        });
+        slotJuara = {};
+
+        renderRankForms(groups);
+        document.getElementById("rankFormWrap").style.display = "block";
+    }
+
+    // Grouping manual: admin tampal kumpulan yang dah ditetapkan sendiri
+    function gunaGroupingManual() {
+        let raw = document.getElementById("manualGroupInput").value;
+        let keys = groupKeysForMode();
+        let groups = {};
+        keys.forEach(k => groups[k] = []);
+        let cur = null;
+
+        for (let line of raw.split("\n")) {
+            let t = line.trim();
+            if (!t) continue;
+            let m = t.match(/^(?:kumpulan|group)?\s*([A-Da-d])\s*[:\-]?\s*$/i);
+            if (m) {
+                cur = m[1].toUpperCase();
+                if (!groups[cur]) {
+                    alert(`Kumpulan ${cur} tak wujud dalam format ${keys.length} kumpulan (${keys.join(", ")}).`);
+                    return;
+                }
+                continue;
+            }
+            if (!cur) {
+                alert("Mulakan dengan tajuk kumpulan, contoh: Kumpulan A");
+                return;
+            }
+            let nm = stripLeadingNumbering(t);
+            if (nm) groups[cur].push(nm);
+        }
+
+        let minPlaces = placesForMode();
+        let bermasalah = keys.filter(k => groups[k].length < minPlaces);
+        if (bermasalah.length) {
+            alert(`Kumpulan ${bermasalah.join(", ")} kurang daripada ${minPlaces} pair — tak cukup untuk rekod keputusan.`);
+            return;
+        }
+
+        if (Object.keys(currentGroups).length > 0 &&
+            !confirm("Grouping sedia ada, keputusan & carta akan diganti. Teruskan?")) return;
+
+        terapkanGrouping(groups);
+
+        // Kalau senarai nama belum diisi, isi automatik supaya view.html & bayaran.html ada senarai peserta
+        let pairInput = document.getElementById("pairInput");
+        if (!pairInput.value.trim()) {
+            pairInput.value = keys.flatMap(k => groups[k]).join("\n");
+            simpanNama();
+        }
+    }
+
     function buatGrouping() {
         let inputVal = document.getElementById("pairInput").value.trim();
         if(!inputVal) {
@@ -1897,31 +1981,8 @@ document.addEventListener("click", function(e){
                 groups[shuffledKeys[gIndex]].push(pair);
             });
 
-            let html = renderGroupResult(groups);
-
-            resBox.innerHTML = html;
-            showResult(resBox);
             setBtnLoading(btn, false);
-
-            currentGroups = groups;
-            saveState("kbttc_undian_groups", groups);
-            clearState("kbttc_undian_ranks");
-            clearState("kbttc_undian_slotjuara");
-            clearState("kbttc_undian_p16");
-            clearState("kbttc_undian_p16full");
-            clearState("kbttc_undian_qf2");
-            clearState("kbttc_undian_matches");
-            document.getElementById("scoreBtnWrap").style.display = "block";
-            document.getElementById("resultJuara").style.display = "none";
-            document.getElementById("resultJuara").innerHTML = "";
-            document.getElementById("resultP16").style.display = "none";
-            document.getElementById("resultP16").innerHTML = "";
-            document.getElementById("resultQf2").style.display = "none";
-            document.getElementById("resultQf2").innerHTML = "";
-            slotJuara = {};
-
-            renderRankForms(groups);
-            document.getElementById("rankFormWrap").style.display = "block";
+            terapkanGrouping(groups);
         }, 5000);
     }
 
